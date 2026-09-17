@@ -352,9 +352,9 @@ function scoreCircle(s,sm){const t=s>=6.8?'hi':s>=3.4?'mid':'lo';return `<span c
 
 /* ================= state ================= */
 const KEY='accord_v3';let S=load();
-function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.ranking){r.owned=r.owned||[];r.tried=r.tried||[];r.want=r.want||[];r.posts=r.posts||[];return r;}}catch(e){}return{onboarded:false,ranking:[],owned:[],tried:[],want:[],posts:[]};}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({onboarded:S.onboarded,ranking:S.ranking,owned:S.owned,tried:S.tried,want:S.want,posts:S.posts}));}catch(e){}}
-let V={screen:S.onboarded?'main':'intro',tab:'home',pickSel:[],queue:[],cur:null,curBucket:null,lo:0,hi:0,src:'add',onbTotal:0,cmpN:0,placed:null,query:'',detailId:null,detailBack:'home',homeSeg:'recs',profSeg:'ranking',rankFam:'all',explore:null,guide:null,liked:{},composeBody:'',composeAttach:null};
+function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.ranking){r.owned=r.owned||[];r.tried=r.tried||[];r.want=r.want||[];r.posts=r.posts||[];r.guides=r.guides||[];r.sentRecs=r.sentRecs||[];return r;}}catch(e){}return{onboarded:false,ranking:[],owned:[],tried:[],want:[],posts:[],guides:[],sentRecs:[]};}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({onboarded:S.onboarded,ranking:S.ranking,owned:S.owned,tried:S.tried,want:S.want,posts:S.posts,guides:S.guides,sentRecs:S.sentRecs}));}catch(e){}}
+let V={screen:S.onboarded?'main':'intro',tab:'home',pickSel:[],queue:[],cur:null,curBucket:null,lo:0,hi:0,src:'add',onbTotal:0,cmpN:0,placed:null,query:'',detailId:null,detailBack:'home',homeSeg:'recs',profSeg:'ranking',rankFam:'all',explore:null,guideRef:null,liked:{},composeBody:'',composeAttach:null,gTitle:'',gIds:[],gQuery:'',recFrag:null,recTo:null};
 function relTime(ts){const d=Date.now()-ts;const m=Math.floor(d/60000);if(m<1)return'Just now';if(m<60)return m+'m ago';const h=Math.floor(m/60);if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';}
 
 /* ================= ranking ================= */
@@ -418,7 +418,7 @@ let render=function(){let h;const s=V.screen;
   if(s==='addsearch'){app.innerHTML=viewAddSearch();bind();focusSearch();return;}
   if(s==='intro')h=viewIntro();else if(s==='pick')h=viewPick();else if(s==='bucket')h=viewBucket();
   else if(s==='compare')h=viewCompare();else if(s==='result')h=viewResult();else if(s==='reveal')h=viewReveal();
-  else if(s==='card')h=viewCard();else if(s==='detail')h=viewDetail();else if(s==='guide')h=viewGuide();else if(s==='compose')h=viewCompose();else h=viewMain();
+  else if(s==='card')h=viewCard();else if(s==='detail')h=viewDetail();else if(s==='guide')h=viewGuide();else if(s==='guides')h=viewGuides();else if(s==='guidenew')h=viewGuideNew();else if(s==='recommend')h=viewRecommend();else if(s==='compose')h=viewCompose();else h=viewMain();
   app.innerHTML=h;bind();if(s==='compose'){const t=app.querySelector('#postbody');if(t){t.focus();t.setSelectionRange(t.value.length,t.value.length);}}};
 
 function postCard(p){return `<div class="frow"><div class="fhead"><div class="avatar">You</div><div class="finfo"><div class="ftitle"><b>You</b></div><div class="fsub">${esc(relTime(p.createdAt))}</div></div></div>
@@ -500,8 +500,10 @@ function recRow(id,reason){return `<button class="row" data-detail="${id}">${pla
   <span class="addbtn" data-tried="${id}">${icon('plus',17)}</span></button>`;}
 function chevRow(id){return `<button class="row" data-detail="${id}">${plate(id,40,54,8)}<div class="meta"><div class="nm">${esc(F[id][0])}</div><div class="hs">${esc(F[id][1])}</div></div><span style="color:var(--faint)">${icon('chevR',18)}</span></button>`;}
 
-function guideCard(g,i){const cover=g.ids.slice(0,4).map(id=>plateCell(id)).join('');const tried=g.ids.filter(id=>isTried(id)).length;
-  return `<button class="gcard" data-guide="${i}"><div class="gcover">${cover}</div><div class="gover"><div class="gtitle">${esc(g.t)}</div><div class="gprog">You've tried ${tried} of ${g.ids.length}</div></div></button>`;}
+function allGuides(){return S.guides.map((g,i)=>({ref:'u'+i,title:g.title,ids:g.ids,mine:true})).concat(GUIDES.map((g,i)=>({ref:'s'+i,title:g.t,ids:g.ids,mine:false})));}
+function getGuide(ref){if(!ref)return null;const i=+ref.slice(1);if(ref[0]==='u'){const g=S.guides[i];return g?{title:g.title,ids:g.ids,mine:true,idx:i}:null;}const g=GUIDES[i];return g?{title:g.t,ids:g.ids,mine:false}:null;}
+function guideCard(g){const cover=g.ids.slice(0,4).map(id=>plateCell(id)).join('');const tried=g.ids.filter(id=>isTried(id)).length;
+  return `<button class="gcard" data-guide="${g.ref}"><div class="gcover">${cover}</div><div class="gover">${g.mine?'<div class="eyebrow" style="color:rgba(255,255,255,.82)">Yours</div>':''}<div class="gtitle">${esc(g.title)}</div><div class="gprog">${g.mine?g.ids.length+' fragrances':`You've tried ${tried} of ${g.ids.length}`}</div></div></button>`;}
 
 function tabHome(){const seg=V.homeSeg;let list='';
   if(seg==='recs'){const r=recs(10);list=r.length?r.map(x=>recRow(x.id,`Leans <b>${esc(x.why)}</b>, like your top picks`)).join(''):emptyList("Rank a few fragrances and your recommendations show up here.");}
@@ -513,8 +515,8 @@ function tabHome(){const seg=V.homeSeg;let list='';
     <div class="fill"><button class="searchbar" data-go="addsearch">${icon('search',18)}<span>Search fragrance, house, note</span></button>
       <div class="chiprow">${c('recs','nav','For you')}${c('trending','trend','Trending')}${c('friends','usern','Friends')}</div>
       <div class="list" style="padding-bottom:6px">${list}</div>
-      <div class="shead"><div class="st">Featured guides</div><button class="sa" data-navtab="explore">See all</button></div>
-      <div class="grow">${GUIDES.map((g,i)=>guideCard(g,i)).join('')}</div>
+      <div class="shead"><div class="st">Guides</div><button class="sa" data-go="guides">See all</button></div>
+      <div class="grow">${allGuides().slice(0,6).map(g=>guideCard(g)).join('')}</div>
       <div class="shead"><div class="st">From your circle</div></div>
       <button class="composebar" data-go="compose"><div class="avatar" style="width:38px;height:38px;font-size:14px">You</div><span>What are you wearing today?</span>${icon('plus',18)}</button>
       <div class="feed">${S.posts.map(p=>postCard(p)).join('')}${feed}</div><div style="height:24px"></div></div>`;}
@@ -552,7 +554,10 @@ function tabActivity(){const top=`<div class="top"><div class="htitle"><h1>Activ
     return `<div class="row" style="align-items:flex-start"><div class="avatar">${esc(t.name[0])}</div><div class="meta"><div class="nm">${esc(t.name)}</div><div class="hs">${esc(t.vibe)}</div>
       <div style="font-size:13px;color:var(--ink-2);margin-top:6px;line-height:1.5">${d.shared.length?`You both love <b>${esc(d.shared.join(', '))}</b>. `:''}${hook}</div></div>
       <div style="flex:none;text-align:right"><div style="font-weight:700;font-size:19px;color:var(--accent);letter-spacing:-.02em" class="num">${d.match}%</div><div class="eyebrow" style="font-size:9px;margin-top:2px">match</div></div></div>`;}).join('');
-  return top+`<div class="fill scrn">${recSec?`<div class="shead"><div class="st">Recommended to you</div></div><div class="list">${recSec}</div>`:''}
+  const sent=S.sentRecs.map(r=>`<button class="row" data-detail="${r.frag}"><div class="avatar" style="width:40px;height:40px;font-size:16px">${esc(r.to[0])}</div>
+    <div class="meta"><div class="nm">You recommended <b>${esc(F[r.frag][0])}</b> to ${esc(r.to)}</div><div class="hs">${r.msg?esc(r.msg):esc(relTime(r.ts))}</div></div>${plate(r.frag,40,54,8)}</button>`).join('');
+  return top+`<div class="fill scrn">${sent?`<div class="shead"><div class="st">Sent by you</div></div><div class="list">${sent}</div>`:''}
+    ${recSec?`<div class="shead"><div class="st">Recommended to you</div></div><div class="list">${recSec}</div>`:''}
     <div class="shead"><div class="st">People who match your taste</div></div><div class="list">${rows}</div>
     <div class="disc">Sample profiles for now &mdash; real friends &amp; their recs appear once you follow people.</div></div>`;}
 
@@ -578,10 +583,37 @@ function tabProfile(){const top=`<div class="hbar"><div class="brand" style="col
     ${body}
     <div style="padding:22px 18px 30px"><button class="danger" data-reset=1>Reset everything</button></div></div>`;}
 
-function viewGuide(){const g=GUIDES[V.guide];const cover=g.ids.slice(0,4).map(id=>plateCell(id)).join('');const tried=g.ids.filter(id=>isTried(id)).length;
-  return `<div class="dwrap scrn"><div class="backbar" style="position:absolute;background:none;z-index:6"><button data-go="main" data-tab="home" style="background:rgba(0,0,0,.28);color:#fff">${icon('chevL',22)}</button><span></span></div>
-    <div class="ghero">${cover}<div class="gov"><div class="eyebrow" style="color:rgba(255,255,255,.8)">Guide &middot; ${g.ids.length} fragrances</div><div class="gt">${esc(g.t)}</div><div class="gprog" style="margin-top:6px">You've tried ${tried} of ${g.ids.length}</div></div></div>
+function viewGuide(){const g=getGuide(V.guideRef);if(!g)return viewGuides();const cover=g.ids.slice(0,4).map(id=>plateCell(id)).join('');const tried=g.ids.filter(id=>isTried(id)).length;
+  return `<div class="dwrap scrn"><div class="backbar" style="position:absolute;background:none;z-index:6"><button data-go="guides" style="background:rgba(0,0,0,.28);color:#fff">${icon('chevL',22)}</button>${g.mine?`<button data-delguide="${g.idx}" style="background:rgba(0,0,0,.28);color:#fff">${icon('x',20)}</button>`:'<span></span>'}</div>
+    <div class="ghero">${cover}<div class="gov"><div class="eyebrow" style="color:rgba(255,255,255,.8)">${g.mine?'Your guide':'Guide'} &middot; ${g.ids.length} fragrances</div><div class="gt">${esc(g.title)}</div><div class="gprog" style="margin-top:6px">You've tried ${tried} of ${g.ids.length}</div></div></div>
     <div class="list" style="padding-top:6px">${g.ids.map(id=>{const r=rankOf(id);return `<button class="row" data-detail="${id}">${plate(id,40,54,8)}<div class="meta"><div class="nm">${esc(F[id][0])}</div><div class="hs">${esc(F[id][1])}</div></div>${r>=0?scoreCircle(scoreAt(r),1):`<span class="addbtn" data-tried="${id}">${icon('plus',17)}</span>`}</button>`;}).join('')}</div><div style="height:24px"></div></div>`;}
+
+function viewGuides(){const gs=allGuides();
+  return `<div class="top"><div class="htitle"><h1>Guides</h1></div><button class="hbtn solid" data-go="guidenew">${icon('plus',20)}</button></div>
+    <div class="fill scrn"><div style="padding:2px 18px 8px"><button class="btn" data-go="guidenew">${icon('plus',17)} Create a guide</button></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px;padding:10px 18px 24px">${gs.map(g=>guideCard(g)).join('')}</div></div>`;}
+
+function viewGuideNew(){const q=V.gQuery.trim().toLowerCase();
+  const sel=V.gIds.map(id=>`<button class="chip on" data-gtoggle="${id}">${esc(F[id][0])} ${icon('x',13,2.4)}</button>`).join('');
+  const list=F.map((f,i)=>i).filter(i=>!V.gIds.includes(i)).filter(i=>!q||(F[i][0]+' '+F[i][1]).toLowerCase().includes(q)).slice(0,40)
+    .map(i=>`<button class="row" data-gtoggle="${i}">${plate(i,40,54,8)}<div class="meta"><div class="nm">${esc(F[i][0])}</div><div class="hs">${esc(F[i][1])}</div></div><span class="addbtn">${icon('plus',17)}</span></button>`).join('');
+  const ready=V.gTitle.trim()&&V.gIds.length;
+  return `<div class="hbar" style="padding-bottom:8px"><button style="color:var(--ink-2)" data-go="guides">${icon('x',22)}</button><div class="brand" style="color:var(--ink);font-size:18px">New guide</div><button class="postbtn ${ready?'on':''}" data-createguide="1">Create</button></div>
+    <div class="fill"><div style="padding:6px 18px 0"><input id="gtitle" placeholder="Guide title &mdash; e.g. Best for Summer" value="${esc(V.gTitle)}" style="width:100%;border:0;outline:none;font-family:inherit;font-size:22px;font-weight:700;color:var(--ink);background:none;letter-spacing:-.02em"></div>
+      ${V.gIds.length?`<div class="chiprow" style="padding-top:12px">${sel}</div>`:''}
+      <div class="eyebrow" style="padding:16px 18px 0">Add fragrances &middot; ${V.gIds.length} added</div>
+      <div style="padding:8px 18px 0"><div class="searchbar" style="margin:0"><span style="color:var(--muted)">${icon('search',18)}</span><input id="gsearch" placeholder="Search to add" value="${esc(V.gQuery)}" autocomplete="off" style="flex:1;border:0;background:none;outline:none;font-size:16px;color:var(--ink);font-family:inherit;font-weight:500"></div></div>
+      <div class="list" style="padding-top:6px">${list}</div></div>`;}
+
+function viewRecommend(){const id=V.recFrag;const data=TWINS.map(t=>({t,d:twinData(t)})).sort((a,b)=>b.d.match-a.d.match);
+  const rows=data.map(({t,d})=>`<button class="row" data-recto="${esc(t.name)}"><div class="avatar">${esc(t.name[0])}</div><div class="meta"><div class="nm">${esc(t.name)}</div><div class="hs">${esc(t.vibe)}</div></div>
+    <div style="flex:none;font-weight:700;color:var(--accent)" class="num">${d.match}%</div><span style="margin-left:12px;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line-dk);display:grid;place-items:center;color:#fff;flex:none;${V.recTo===t.name?'background:var(--accent);border-color:var(--accent)':''}">${V.recTo===t.name?icon('check',13,2.6):''}</span></button>`).join('');
+  const ready=V.recTo;
+  return `<div class="hbar" style="padding-bottom:8px"><button style="color:var(--ink-2)" data-back-detail="1">${icon('x',22)}</button><div class="brand" style="color:var(--ink);font-size:18px">Recommend</div><button class="postbtn ${ready?'on':''}" data-sendrec="1">Send</button></div>
+    <div class="fill"><div class="row" style="border-bottom:1px solid var(--line);margin:0 18px">${plate(id,44,60,9)}<div class="meta"><div class="nm">${esc(F[id][0])}</div><div class="hs">${esc(F[id][1])}</div></div></div>
+      <div style="padding:10px 18px 0"><textarea id="recmsg" maxlength="140" placeholder="Add a note &mdash; why they'll like it (optional)" style="width:100%;min-height:60px;border:1.5px solid var(--line-dk);border-radius:12px;padding:11px 13px;outline:none;resize:none;font-family:inherit;font-size:15px;color:var(--ink);background:none"></textarea></div>
+      <div class="eyebrow" style="padding:16px 18px 0">Send to a nose-twin</div>
+      <div class="list">${rows}</div><div class="disc">Sample profiles for now &mdash; recommends land for real once you follow friends.</div></div>`;}
 
 function viewDetail(){const id=V.detailId,idx=rankOf(id);const ranked=idx>=0;
   const notes=F[id][2].map(a=>`<b>${esc(a)}</b>`).join(' &nbsp;&middot;&nbsp; ');
@@ -599,7 +631,7 @@ function viewDetail(){const id=V.detailId,idx=rankOf(id);const ranked=idx>=0;
     :`<button class="btn" data-tried="${id}">Rank this</button>`;
   return `<div class="dwrap scrn"><div class="backbar"><button data-go="main" data-tab="${V.detailBack}">${icon('chevL',22)}</button><button data-go="main" data-tab="${V.detailBack}">${icon('x',20)}</button></div>
     <div class="dhero">${plate(id,168,240,16)}<h1>${esc(F[id][0])}</h1><div class="dh">${esc(F[id][1])}</div></div>
-    ${meta}<div class="dnotes">${notes}</div>${states}<div class="dact">${actions}</div>${simHtml}<div style="height:26px"></div></div>`;}
+    ${meta}<div class="dnotes">${notes}</div>${states}<div class="dact">${actions}<button class="btn line" data-recommend="${id}">${icon('share',16,2)} Recommend to a friend</button></div>${simHtml}<div style="height:26px"></div></div>`;}
 
 function viewCard(){const dna=topAccords(3).map(d=>d.a[0].toUpperCase()+d.a.slice(1)).join(', ');
   const items=S.ranking.slice(0,5).map((it,i)=>`<div class="pi"><div class="pr num">${i+1}</div>${plate(it.id,30,42,6)}<div><div class="pn2">${esc(F[it.id][0])}</div><div class="ph2">${esc(F[it.id][1])}</div></div></div>`).join('');
@@ -620,7 +652,8 @@ function openDetail(id){V.detailBack=(V.screen==='main')?V.tab:(V.screen==='adds
 function bind(){
   app.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const g=b.dataset.go;
     if(g==='pick'){V.screen='pick';V.pickSel=[];}else if(g==='main'){V.screen='main';if(b.dataset.tab)V.tab=b.dataset.tab;}
-    else if(g==='addsearch'){V.screen='addsearch';V.query='';}else if(g==='card')V.screen='card';else if(g==='compose')V.screen='compose';render();});
+    else if(g==='addsearch'){V.screen='addsearch';V.query='';}else if(g==='card')V.screen='card';else if(g==='compose')V.screen='compose';
+    else if(g==='guides')V.screen='guides';else if(g==='guidenew'){V.gTitle='';V.gIds=[];V.gQuery='';V.screen='guidenew';}render();});
   app.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{const i=+b.dataset.pick,k=V.pickSel.indexOf(i);if(k>=0)V.pickSel.splice(k,1);else V.pickSel.push(i);render();});
   const so=app.querySelector('[data-startonb]');if(so)so.onclick=()=>startInsert(V.pickSel,'onboard');
   app.querySelectorAll('[data-bucket]').forEach(b=>b.onclick=()=>chooseBucket(b.dataset.bucket));
@@ -630,7 +663,16 @@ function bind(){
   app.querySelectorAll('[data-navtab]').forEach(b=>b.onclick=()=>{V.tab=b.dataset.navtab;V.screen='main';render();});
   app.querySelectorAll('[data-detail]').forEach(b=>b.onclick=e=>{if(e.target.closest('[data-tried],[data-like]'))return;openDetail(+b.dataset.detail);});
   app.querySelectorAll('[data-tried]').forEach(b=>b.onclick=e=>{e.stopPropagation();startInsert([+b.dataset.tried],'add');});
-  app.querySelectorAll('[data-guide]').forEach(b=>b.onclick=()=>{V.guide=+b.dataset.guide;V.screen='guide';render();});
+  app.querySelectorAll('[data-guide]').forEach(b=>b.onclick=()=>{V.guideRef=b.dataset.guide;V.screen='guide';render();});
+  app.querySelectorAll('[data-gtoggle]').forEach(b=>b.onclick=()=>{const gt=app.querySelector('#gtitle');if(gt)V.gTitle=gt.value;const id=+b.dataset.gtoggle,k=V.gIds.indexOf(id);if(k>=0)V.gIds.splice(k,1);else V.gIds.push(id);render();});
+  const cg=app.querySelector('[data-createguide]');if(cg)cg.onclick=()=>{const gt=app.querySelector('#gtitle');if(gt)V.gTitle=gt.value;if(!V.gTitle.trim()||!V.gIds.length)return;S.guides.unshift({id:Date.now(),title:V.gTitle.trim(),ids:V.gIds.slice()});save();V.gTitle='';V.gIds=[];V.gQuery='';V.guideRef='u0';V.screen='guide';render();};
+  const gti=app.querySelector('#gtitle');if(gti)gti.oninput=()=>{V.gTitle=gti.value;const x=app.querySelector('[data-createguide]');if(x)x.classList.toggle('on',!!(gti.value.trim()&&V.gIds.length));};
+  const gse=app.querySelector('#gsearch');if(gse)gse.oninput=()=>{const gt=app.querySelector('#gtitle');if(gt)V.gTitle=gt.value;V.gQuery=gse.value;const p=gse.selectionStart;app.innerHTML=viewGuideNew();bind();const n=app.querySelector('#gsearch');if(n){n.focus();try{n.setSelectionRange(p,p);}catch(e){}}};
+  app.querySelectorAll('[data-delguide]').forEach(b=>b.onclick=()=>{if(confirm('Delete this guide?')){S.guides.splice(+b.dataset.delguide,1);save();V.screen='guides';render();}});
+  app.querySelectorAll('[data-recommend]').forEach(b=>b.onclick=()=>{V.recFrag=+b.dataset.recommend;V.recTo=null;V.screen='recommend';render();});
+  app.querySelectorAll('[data-recto]').forEach(b=>b.onclick=()=>{V.recTo=b.dataset.recto;render();});
+  app.querySelectorAll('[data-back-detail]').forEach(b=>b.onclick=()=>{V.screen='detail';render();});
+  const sr=app.querySelector('[data-sendrec]');if(sr)sr.onclick=()=>{if(!V.recTo)return;const m=app.querySelector('#recmsg');S.sentRecs.unshift({frag:V.recFrag,to:V.recTo,msg:m?m.value.trim():'',ts:Date.now()});save();V.recTo=null;V.screen='main';V.tab='activity';render();};
   app.querySelectorAll('[data-like]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=+b.dataset.like;V.liked[id]=!V.liked[id];render();});
   app.querySelectorAll('[data-rerank]').forEach(b=>b.onclick=()=>rerank(+b.dataset.rerank));
   app.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{if(confirm('Remove this from your ranking?'))removeF(+b.dataset.remove);});
