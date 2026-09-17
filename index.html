@@ -13,7 +13,7 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%}
   body{background:#DCDAD3;color:var(--ink);font-family:"Space Grotesk",system-ui,-apple-system,Segoe UI,sans-serif;
-    font-size:15px;line-height:1.42;-webkit-font-smoothing:antialiased;display:flex;justify-content:center}
+    font-size:15px;line-height:1.42;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;display:flex;justify-content:center}
   #app{width:100%;max-width:430px;min-height:100dvh;background:var(--bg);display:flex;flex-direction:column;position:relative;overflow:hidden}
   button{font-family:inherit;font-size:inherit;cursor:pointer;border:0;background:none;color:inherit;padding:0}
   button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -79,6 +79,9 @@
   .composebar:active{background:var(--bg-3)}
   .postbtn{font-weight:700;font-size:14.5px;color:var(--muted);padding:8px 16px;border-radius:20px;border:1.5px solid var(--line-dk)}
   .postbtn.on{background:var(--accent);color:#fff}
+  .followbtn{flex:none;padding:8px 18px;border-radius:20px;border:1.5px solid var(--line-dk);font-size:13px;font-weight:700;color:var(--accent);background:none}
+  .followbtn.on{background:var(--accent);color:#fff}
+  .followbtn:active{opacity:.7}
 
   /* generic rows / lists */
   .list{padding:0 18px}
@@ -323,16 +326,16 @@ const PLATE={woody:["#D9C7A6","#7C5C34"],amber:["#E7D2A0","#95691F"],sweet:["#E6
 function plateOf(id){return PLATE[F[id][2][0]]||["#D8CFC0","#585048"];}
 const MONO={"Parfums de Marly":"PdM","Jean Paul Gaultier":"JPG","Tom Ford":"TF","Louis Vuitton":"LV","Frederic Malle":"FM","Le Labo":"LE LABO","Carolina Herrera":"CH","Dolce&Gabbana":"D&G","Viktor&Rolf":"V&R","Emporio Armani":"EA","Ariana Grande":"AG","Paco Rabanne":"PR","Tiziana Terenzi":"TT","By Kilian":"KILIAN","Orto Parisi":"OP","Maison Francis Kurkdjian":"MFK"};
 function mono(b){if(MONO[b])return MONO[b];const w=b.split(/\s+/);if(w.length>1)return w.map(x=>x[0]).join('').toUpperCase().slice(0,3);return b.length<=4?b.toUpperCase():b.slice(0,3).toUpperCase();}
-function markLayer(id){const m=plateOf(id)[1];const mm=mono(F[id][1]);const fs=Math.min(42,138/Math.max(2.2,mm.length));
- return `<svg viewBox="0 0 100 118" preserveAspectRatio="xMidYMid meet" style="position:absolute;inset:0;width:100%;height:100%"><text x="50" y="59" dominant-baseline="central" text-anchor="middle" font-family="'Space Grotesk',ui-sans-serif,sans-serif" font-weight="700" font-size="${fs}" letter-spacing="-1.5" fill="${m}">${esc(mm)}</text></svg>`;}
+function markLayer(id){const m=plateOf(id)[1];const mm=mono(F[id][1]);const fs=Math.min(50,128/Math.max(2,mm.length));
+ return `<span style="position:absolute;inset:0;display:grid;place-items:center;padding:0 6%"><span style="font-family:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;font-weight:700;color:${m};font-size:${fs}cqw;line-height:1;letter-spacing:-.03em;white-space:nowrap">${esc(mm)}</span></span>`;}
 function vignette(r){return `<span style="position:absolute;inset:0;border-radius:${r}px;box-shadow:inset 0 0 0 1.4px var(--line-dk)"></span>`;}
 function plate(id,w,h,r){const[g]=plateOf(id);r=r==null?7:r;
- return `<span style="display:block;width:${w}px;height:${h}px;border-radius:${r}px;background:${g};position:relative;overflow:hidden;flex:none">${markLayer(id)}${vignette(r)}</span>`;}
+ return `<span style="display:block;width:${w}px;height:${h}px;border-radius:${r}px;background:${g};position:relative;overflow:hidden;container-type:inline-size;flex:none">${markLayer(id)}${vignette(r)}</span>`;}
 function plateFlex(id,ratio,r){const[g]=plateOf(id);r=r==null?8:r;
- return `<span style="display:block;width:100%;aspect-ratio:1/${ratio};border-radius:${r}px;background:${g};position:relative;overflow:hidden">${markLayer(id)}${vignette(r)}</span>`;}
+ return `<span style="display:block;width:100%;aspect-ratio:1/${ratio};border-radius:${r}px;background:${g};position:relative;overflow:hidden;container-type:inline-size">${markLayer(id)}${vignette(r)}</span>`;}
 function plateFill(id,r){const[g]=plateOf(id);r=r==null?10:r;
- return `<span style="display:block;width:100%;height:100%;border-radius:${r}px;background:${g};position:relative;overflow:hidden">${markLayer(id)}${vignette(r)}</span>`;}
-function plateCell(id){const[g]=plateOf(id);return `<span style="display:block;width:100%;height:100%;background:${g};position:relative;overflow:hidden">${markLayer(id)}</span>`;}
+ return `<span style="display:block;width:100%;height:100%;border-radius:${r}px;background:${g};position:relative;overflow:hidden;container-type:inline-size">${markLayer(id)}${vignette(r)}</span>`;}
+function plateCell(id){const[g]=plateOf(id);return `<span style="display:block;width:100%;height:100%;background:${g};position:relative;overflow:hidden;container-type:inline-size">${markLayer(id)}</span>`;}
 
 const IC={plus:'<path d="M12 5v14M5 12h14"/>',chevL:'<path d="M15 5l-7 7 7 7"/>',chevR:'<path d="M9 5l7 7-7 7"/>',
  search:'<circle cx="11" cy="11" r="7.2"/><path d="M21 21l-4.4-4.4"/>',check:'<path d="M20 6.5L9.2 17.3 4 12.1"/>',x:'<path d="M18 6L6 18M6 6l12 12"/>',
@@ -352,9 +355,15 @@ function scoreCircle(s,sm){const t=s>=6.8?'hi':s>=3.4?'mid':'lo';return `<span c
 
 /* ================= state ================= */
 const KEY='accord_v3';let S=load();
-function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.ranking){r.owned=r.owned||[];r.tried=r.tried||[];r.want=r.want||[];r.posts=r.posts||[];r.guides=r.guides||[];r.sentRecs=r.sentRecs||[];return r;}}catch(e){}return{onboarded:false,ranking:[],owned:[],tried:[],want:[],posts:[],guides:[],sentRecs:[]};}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({onboarded:S.onboarded,ranking:S.ranking,owned:S.owned,tried:S.tried,want:S.want,posts:S.posts,guides:S.guides,sentRecs:S.sentRecs}));}catch(e){}}
-let V={screen:S.onboarded?'main':'intro',tab:'home',pickSel:[],queue:[],cur:null,curBucket:null,lo:0,hi:0,src:'add',onbTotal:0,cmpN:0,placed:null,query:'',detailId:null,detailBack:'home',homeSeg:'recs',profSeg:'ranking',rankFam:'all',explore:null,guideRef:null,liked:{},composeBody:'',composeAttach:null,gTitle:'',gIds:[],gQuery:'',recFrag:null,recTo:null};
+function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.ranking){r.owned=r.owned||[];r.tried=r.tried||[];r.want=r.want||[];r.posts=r.posts||[];r.guides=r.guides||[];r.sentRecs=r.sentRecs||[];r.following=r.following||[];r.notifSeen=r.notifSeen||false;return r;}}catch(e){}return{onboarded:false,ranking:[],owned:[],tried:[],want:[],posts:[],guides:[],sentRecs:[],following:[],notifSeen:false};}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({onboarded:S.onboarded,ranking:S.ranking,owned:S.owned,tried:S.tried,want:S.want,posts:S.posts,guides:S.guides,sentRecs:S.sentRecs,following:S.following,notifSeen:S.notifSeen}));}catch(e){}}
+function isFollowing(n){return S.following.includes(n);}
+function notifItems(){const out=[];const data=TWINS.map(t=>({t,d:twinData(t)})).sort((a,b)=>b.d.match-a.d.match);
+  data.slice(0,2).forEach(({t,d})=>{if(d.theirTop!=null)out.push({name:t.name,frag:d.theirTop,text:`recommends ${F[d.theirTop][0]}`,sub:`${d.match}% taste match`,person:t.name});});
+  if(data[0])out.push({name:data[0].t.name,text:`You're a ${data[0].d.match}% taste match`,sub:'See their shelf',person:data[0].t.name});
+  data.slice(0,3).forEach(({t})=>{const id=nameId[t.picks[0]];if(id!=null&&!isFollowing(t.name))out.push({name:t.name,text:`ranked ${F[id][0]} #1`,sub:isFollowing(t.name)?'':'Tap to follow',person:t.name,frag:id});});
+  return out;}
+let V={screen:S.onboarded?'main':'intro',tab:'home',pickSel:[],queue:[],cur:null,curBucket:null,lo:0,hi:0,src:'add',onbTotal:0,cmpN:0,placed:null,query:'',detailId:null,detailBack:'home',homeSeg:'recs',profSeg:'ranking',rankFam:'all',explore:null,guideRef:null,liked:{},composeBody:'',composeAttach:null,gTitle:'',gIds:[],gQuery:'',recFrag:null,recTo:null,personName:null,personBack:'activity'};
 function relTime(ts){const d=Date.now()-ts;const m=Math.floor(d/60000);if(m<1)return'Just now';if(m<60)return m+'m ago';const h=Math.floor(m/60);if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';}
 
 /* ================= ranking ================= */
@@ -418,7 +427,7 @@ let render=function(){let h;const s=V.screen;
   if(s==='addsearch'){app.innerHTML=viewAddSearch();bind();focusSearch();return;}
   if(s==='intro')h=viewIntro();else if(s==='pick')h=viewPick();else if(s==='bucket')h=viewBucket();
   else if(s==='compare')h=viewCompare();else if(s==='result')h=viewResult();else if(s==='reveal')h=viewReveal();
-  else if(s==='card')h=viewCard();else if(s==='detail')h=viewDetail();else if(s==='guide')h=viewGuide();else if(s==='guides')h=viewGuides();else if(s==='guidenew')h=viewGuideNew();else if(s==='recommend')h=viewRecommend();else if(s==='compose')h=viewCompose();else h=viewMain();
+  else if(s==='card')h=viewCard();else if(s==='detail')h=viewDetail();else if(s==='guide')h=viewGuide();else if(s==='guides')h=viewGuides();else if(s==='guidenew')h=viewGuideNew();else if(s==='recommend')h=viewRecommend();else if(s==='compose')h=viewCompose();else if(s==='notifs')h=viewNotifs();else if(s==='person')h=viewPerson(V.personName);else h=viewMain();
   app.innerHTML=h;bind();if(s==='compose'){const t=app.querySelector('#postbody');if(t){t.focus();t.setSelectionRange(t.value.length,t.value.length);}}};
 
 function postCard(p){return `<div class="frow"><div class="fhead"><div class="avatar">You</div><div class="finfo"><div class="ftitle"><b>You</b></div><div class="fsub">${esc(relTime(p.createdAt))}</div></div></div>
@@ -511,7 +520,7 @@ function tabHome(){const seg=V.homeSeg;let list='';
   else{const f=friendFeed();list=f.map(x=>`<button class="row" data-detail="${x.fragId}">${plate(x.fragId,40,54,8)}<div class="meta"><div class="nm">${esc(F[x.fragId][0])}</div><div class="hs">${esc(F[x.fragId][1])}</div><div class="why"><b>${esc(x.name)}</b> &middot; ${x.match}% match</div></div><span style="color:var(--faint)">${icon('chevR',18)}</span></button>`).join('')+`<div class="disc">Sample profiles for now &mdash; follow friends to see their real picks here.</div>`;}
   const c=(id,ic,lb)=>`<button class="chip ${seg===id?'on':''}" data-homeseg="${id}">${icon(ic,15,2)}${lb}</button>`;
   const feed=feedItems().map(x=>feedCard(x)).join('');
-  return `<div class="hbar"><div class="brand">accord</div><div class="hicons"><button data-navtab="activity">${icon('bell',22)}<span class="badge">1</span></button><button data-navtab="profile">${icon('menu',23)}</button></div></div>
+  return `<div class="hbar"><div class="brand">accord</div><div class="hicons"><button data-notifs="1">${icon('bell',22)}${S.notifSeen?'':`<span class="badge">${notifItems().length}</span>`}</button><button data-navtab="profile">${icon('menu',23)}</button></div></div>
     <div class="fill"><button class="searchbar" data-go="addsearch">${icon('search',18)}<span>Search fragrance, house, note</span></button>
       <div class="chiprow">${c('recs','nav','For you')}${c('trending','trend','Trending')}${c('friends','usern','Friends')}</div>
       <div class="list" style="padding-bottom:6px">${list}</div>
@@ -550,10 +559,10 @@ function tabActivity(){const top=`<div class="top"><div class="htitle"><h1>Activ
   const recSec=f.map(x=>`<button class="row" data-detail="${x.fragId}"><div class="avatar" style="width:40px;height:40px;font-size:16px">${esc(x.name[0])}</div>
     <div class="meta"><div class="nm"><b>${esc(x.name)}</b> recommends ${esc(F[x.fragId][0])}</div><div class="hs">${x.match}% taste match &middot; ${esc(F[x.fragId][1])}</div></div>${plate(x.fragId,40,54,8)}</button>`).join('');
   const data=TWINS.map(t=>({t,d:twinData(t)})).sort((a,b)=>b.d.match-a.d.match);
-  const rows=data.map(({t,d})=>{let hook=d.theirTop!=null?`<button class="link" data-detail="${d.theirTop}" style="font-weight:600;font-size:13px">Their pick you haven't tried &mdash; ${esc(F[d.theirTop][0])}</button>`:'';
-    return `<div class="row" style="align-items:flex-start"><div class="avatar">${esc(t.name[0])}</div><div class="meta"><div class="nm">${esc(t.name)}</div><div class="hs">${esc(t.vibe)}</div>
-      <div style="font-size:13px;color:var(--ink-2);margin-top:6px;line-height:1.5">${d.shared.length?`You both love <b>${esc(d.shared.join(', '))}</b>. `:''}${hook}</div></div>
-      <div style="flex:none;text-align:right"><div style="font-weight:700;font-size:19px;color:var(--accent);letter-spacing:-.02em" class="num">${d.match}%</div><div class="eyebrow" style="font-size:9px;margin-top:2px">match</div></div></div>`;}).join('');
+  const rows=data.map(({t,d})=>{const foll=isFollowing(t.name);
+    return `<div class="row" style="align-items:center">
+      <button data-person="${esc(t.name)}" style="display:flex;align-items:center;gap:13px;flex:1;min-width:0;text-align:left"><div class="avatar">${esc(t.name[0])}</div><div class="meta"><div class="nm">${esc(t.name)}</div><div class="hs">${esc(t.vibe)}</div><div style="font-size:12.5px;color:var(--accent);font-weight:600;margin-top:3px">${d.match}% match${d.shared.length?` &middot; both love ${esc(d.shared[0])}`:''}</div></div></button>
+      <button class="followbtn ${foll?'on':''}" data-follow="${esc(t.name)}">${foll?'Following':'Follow'}</button></div>`;}).join('');
   const sent=S.sentRecs.map(r=>`<button class="row" data-detail="${r.frag}"><div class="avatar" style="width:40px;height:40px;font-size:16px">${esc(r.to[0])}</div>
     <div class="meta"><div class="nm">You recommended <b>${esc(F[r.frag][0])}</b> to ${esc(r.to)}</div><div class="hs">${r.msg?esc(r.msg):esc(relTime(r.ts))}</div></div>${plate(r.frag,40,54,8)}</button>`).join('');
   return top+`<div class="fill scrn">${sent?`<div class="shead"><div class="st">Sent by you</div></div><div class="list">${sent}</div>`:''}
@@ -615,6 +624,24 @@ function viewRecommend(){const id=V.recFrag;const data=TWINS.map(t=>({t,d:twinDa
       <div class="eyebrow" style="padding:16px 18px 0">Send to a nose-twin</div>
       <div class="list">${rows}</div><div class="disc">Sample profiles for now &mdash; recommends land for real once you follow friends.</div></div>`;}
 
+function viewNotifs(){const items=notifItems();
+  const rows=items.map(n=>`<button class="row" ${n.frag!=null?`data-detail="${n.frag}"`:`data-person="${n.person}"`}><div class="avatar" style="width:42px;height:42px;font-size:16px">${esc(n.name[0])}</div>
+    <div class="meta"><div class="nm" style="font-weight:500"><b>${esc(n.name)}</b> ${esc(n.text)}</div>${n.sub?`<div class="hs" style="color:var(--accent)">${esc(n.sub)}</div>`:''}</div>${n.frag!=null?plate(n.frag,40,54,8):`<span style="color:var(--faint)">${icon('chevR',18)}</span>`}</button>`).join('');
+  return `<div class="hbar" style="padding-bottom:8px"><button style="color:var(--ink-2)" data-go="main">${icon('chevL',22)}</button><div class="brand" style="color:var(--ink);font-size:18px">Notifications</div><span style="width:22px"></span></div>
+    <div class="fill scrn"><div class="list">${rows||emptyList('Nothing yet. Rank fragrances and follow people to get updates.')}</div></div>`;}
+
+function viewPerson(name){const t=TWINS.find(x=>x.name===name);if(!t)return viewMain();const d=twinData(t);const ids=t.picks.map(n=>nameId[n]).filter(x=>x!=null);const foll=isFollowing(name);
+  return `<div class="dwrap scrn"><div class="backbar"><button data-go="main" data-tab="${V.personBack}">${icon('chevL',22)}</button><span></span></div>
+    <div style="text-align:center;padding:4px 24px 6px"><div class="avatar" style="width:84px;height:84px;font-size:34px;margin:0 auto 14px">${esc(t.name[0])}</div>
+      <h1 style="font-size:27px;font-weight:700;letter-spacing:-.02em;margin:0">${esc(t.name)}</h1><div style="color:var(--muted);font-size:14px;margin-top:2px">${esc(t.vibe)}</div>
+      <div style="display:inline-flex;margin:16px 0 4px;border:1.5px solid var(--line-dk);border-radius:14px;overflow:hidden">
+        <div style="padding:11px 20px;text-align:center"><div style="font-weight:700;font-size:19px;color:var(--accent)" class="num">${d.match}%</div><div class="eyebrow" style="font-size:9px;margin-top:3px">Taste match</div></div>
+        <div style="padding:11px 20px;text-align:center;border-left:1.5px solid var(--line-dk)"><div style="font-weight:700;font-size:19px" class="num">${d.shared.length}</div><div class="eyebrow" style="font-size:9px;margin-top:3px">Shared</div></div></div>
+      <div style="padding:12px 18px 2px"><button class="btn ${foll?'line':''}" data-follow="${esc(name)}" style="width:100%">${foll?'Following':'Follow'}</button></div></div>
+    ${d.shared.length?`<div class="dnotes" style="padding-top:6px">You both love <b>${esc(d.shared.join(', '))}</b></div>`:''}
+    <div class="shead"><div class="st">${esc(t.name)}'s top shelf</div></div>
+    <div class="list">${ids.slice(0,8).map((id,i)=>{const r=rankOf(id);return `<button class="row" data-detail="${id}"><div class="rank ${i===0?'one':''}">${i+1}</div>${plate(id,40,54,8)}<div class="meta"><div class="nm">${esc(F[id][0])}</div><div class="hs">${esc(F[id][1])}</div></div>${r>=0?scoreCircle(scoreAt(r),1):`<span class="addbtn" data-tried="${id}">${icon('plus',17)}</span>`}</button>`;}).join('')}</div><div style="height:24px"></div></div>`;}
+
 function viewDetail(){const id=V.detailId,idx=rankOf(id);const ranked=idx>=0;
   const notes=F[id][2].map(a=>`<b>${esc(a)}</b>`).join(' &nbsp;&middot;&nbsp; ');
   let meta='';
@@ -673,6 +700,9 @@ function bind(){
   app.querySelectorAll('[data-recto]').forEach(b=>b.onclick=()=>{V.recTo=b.dataset.recto;render();});
   app.querySelectorAll('[data-back-detail]').forEach(b=>b.onclick=()=>{V.screen='detail';render();});
   const sr=app.querySelector('[data-sendrec]');if(sr)sr.onclick=()=>{if(!V.recTo)return;const m=app.querySelector('#recmsg');S.sentRecs.unshift({frag:V.recFrag,to:V.recTo,msg:m?m.value.trim():'',ts:Date.now()});save();V.recTo=null;V.screen='main';V.tab='activity';render();};
+  app.querySelectorAll('[data-notifs]').forEach(b=>b.onclick=()=>{V.screen='notifs';S.notifSeen=true;save();render();});
+  app.querySelectorAll('[data-person]').forEach(b=>b.onclick=()=>{if(V.screen==='main')V.personBack=V.tab;V.personName=b.dataset.person;V.screen='person';render();});
+  app.querySelectorAll('[data-follow]').forEach(b=>b.onclick=e=>{e.stopPropagation();const n=b.dataset.follow,k=S.following.indexOf(n);if(k>=0)S.following.splice(k,1);else S.following.push(n);save();render();});
   app.querySelectorAll('[data-like]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=+b.dataset.like;V.liked[id]=!V.liked[id];render();});
   app.querySelectorAll('[data-rerank]').forEach(b=>b.onclick=()=>rerank(+b.dataset.rerank));
   app.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{if(confirm('Remove this from your ranking?'))removeF(+b.dataset.remove);});
@@ -684,7 +714,7 @@ function bind(){
   app.querySelectorAll('[data-attach]').forEach(b=>b.onclick=()=>{const t=app.querySelector('#postbody');if(t)V.composeBody=t.value;const id=+b.dataset.attach;V.composeAttach=V.composeAttach===id?null:id;render();});
   const pb=app.querySelector('[data-post]');if(pb)pb.onclick=()=>{const t=app.querySelector('#postbody');const body=(t?t.value:V.composeBody).trim();if(!body)return;S.posts.unshift({id:Date.now(),body,frag:V.composeAttach,createdAt:Date.now()});V.composeBody='';V.composeAttach=null;save();V.screen='main';V.tab='home';render();};
   const pt=app.querySelector('#postbody');if(pt)pt.oninput=()=>{V.composeBody=pt.value;const w=pt.value.trim()?pt.value.trim().split(/\s+/).length:0;const c=app.querySelector('#pcount');if(c)c.textContent=w+'/50 words';const x=app.querySelector('[data-post]');if(x)x.classList.toggle('on',!!pt.value.trim());};
-  const rb=app.querySelector('[data-reset]');if(rb)rb.onclick=()=>{if(confirm('Reset everything?')){S={onboarded:false,ranking:[],owned:[],tried:[],want:[],posts:[]};save();V={screen:'intro',tab:'home',pickSel:[],queue:[],cur:null,query:'',detailBack:'home',homeSeg:'recs',profSeg:'ranking',rankFam:'all',explore:null,guide:null,liked:{},composeBody:'',composeAttach:null};render();}};
+  const rb=app.querySelector('[data-reset]');if(rb)rb.onclick=()=>{if(confirm('Reset everything?')){S={onboarded:false,ranking:[],owned:[],tried:[],want:[],posts:[],guides:[],sentRecs:[],following:[],notifSeen:false};save();V={screen:'intro',tab:'home',pickSel:[],queue:[],cur:null,query:'',detailBack:'home',homeSeg:'recs',profSeg:'ranking',rankFam:'all',explore:null,guideRef:null,liked:{},composeBody:'',composeAttach:null,gTitle:'',gIds:[],gQuery:'',recFrag:null,recTo:null,personName:null,personBack:'activity'};render();}};
   const q=app.querySelector('#q');if(q)q.oninput=()=>{V.query=q.value;const p=q.selectionStart;app.innerHTML=viewAddSearch();bind();const nq=app.querySelector('#q');if(nq){nq.focus();try{nq.setSelectionRange(p,p);}catch(e){}}};
 }
 render();
