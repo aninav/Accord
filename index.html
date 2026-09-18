@@ -485,7 +485,8 @@ function progress(){if(V.src!=='onboard'||!V.onbTotal)return '';const k=V.onbTot
   return `<div class="pgwrap"><div class="pgbar"><i style="width:${pct}%"></i></div></div>`;}
 
 function viewBucket(){const i=V.cur,first=S.ranking.length===0;
-  return `<div class="qwrap slide">${progress()}<div class="qbody">
+  const closeBtn=V.src!=='onboard'?`<button data-go="main" style="width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2);margin-left:auto" aria-label="Close">${icon('x',22)}</button>`:`<span style="width:38px"></span>`;
+  return `<div class="qwrap slide">${progress()}<div style="display:flex;justify-content:flex-end;padding:8px 12px 0">${closeBtn}</div><div class="qbody" style="padding-top:4px">
     <div class="qstage">${plate(i,150,214,14)}</div>
     <div class="qname"><div class="eyebrow" style="margin-bottom:12px;color:var(--accent)">${first?'Your first one':'Rate it'}</div>
       <h2>${esc(F[i][0])}</h2><div class="qh">${esc(F[i][1])}</div></div>
