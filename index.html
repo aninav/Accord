@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <title>Accord</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap">
 <style>
   :root{
     --bg:#FFFFFF;--bg-2:#F4F3F0;--bg-3:#FAF9F7;
@@ -127,6 +127,13 @@
   .logo{font-size:52px;font-weight:700;letter-spacing:-.04em;color:var(--accent);margin-bottom:12px}
   .center h1{font-size:25px;font-weight:700;letter-spacing:-.02em;line-height:1.24;margin:0 auto 26px;max-width:20ch;color:var(--ink)}
   .center h1 b{color:var(--accent)}
+  /* landing */
+  .intro{flex:1;display:flex;flex-direction:column;padding:0 30px calc(34px + env(safe-area-inset-bottom))}
+  .intromid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+  .ilogo{font-size:76px;font-weight:700;letter-spacing:-.05em;color:var(--accent);line-height:.9}
+  .itag{font-size:23px;font-weight:300;letter-spacing:.01em;color:var(--ink-2)}
+  .ibot{display:flex;flex-direction:column;gap:20px;align-items:center}
+  .isub{text-align:center;color:var(--muted);font-size:14.5px;line-height:1.55;max-width:30ch;font-weight:400}
   .center p{color:var(--ink-2);margin:-14px auto 26px;max-width:30ch}
 
   /* pick grid */
@@ -334,7 +341,7 @@ function plateOf(id){return PLATE[F[id][2][0]]||["#D8CFC0","#585048"];}
 const MONO={"Parfums de Marly":"PdM","Jean Paul Gaultier":"JPG","Tom Ford":"TF","Louis Vuitton":"LV","Frederic Malle":"FM","Le Labo":"LE LABO","Carolina Herrera":"CH","Dolce&Gabbana":"D&G","Viktor&Rolf":"V&R","Emporio Armani":"EA","Ariana Grande":"AG","Paco Rabanne":"PR","Tiziana Terenzi":"TT","By Kilian":"KILIAN","Orto Parisi":"OP","Maison Francis Kurkdjian":"MFK"};
 function mono(b){if(MONO[b])return MONO[b];const w=b.split(/\s+/);if(w.length>1)return w.map(x=>x[0]).join('').toUpperCase().slice(0,3);return b.length<=4?b.toUpperCase():b.slice(0,3).toUpperCase();}
 function markLayer(id){const m=plateOf(id)[1];const mm=mono(F[id][1]);const fs=Math.min(50,128/Math.max(2,mm.length));
- return `<span style="position:absolute;inset:0;display:grid;place-items:center;padding:0 6%"><span style="font-family:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;font-weight:700;color:${m};font-size:${fs}cqw;line-height:1;letter-spacing:-.03em;white-space:nowrap">${esc(mm)}</span></span>`;}
+ return `<span style="position:absolute;inset:0;display:grid;place-items:center;padding:0 6%"><span style="font-family:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;font-weight:700;color:${m};font-size:min(${fs}cqw,56px);line-height:1;letter-spacing:-.03em;white-space:nowrap">${esc(mm)}</span></span>`;}
 /* Optional real bottle photos. Add entries like  "Naxos":"images/naxos.jpg"  and the
    photo replaces the monogram tile automatically (monogram stays as fallback if it fails
    to load). Use images you have the rights to (your own, licensed, or public-domain). */
@@ -457,13 +464,11 @@ function viewCompose(){const att=V.composeAttach;const words=V.composeBody.trim(
       <div class="eyebrow" style="margin:20px 0 10px">Attach a fragrance</div>
       <div class="chiprow" style="padding-left:0;padding-right:0">${chips}</div></div>`;}
 
-function viewIntro(){const ids=[nameId["Naxos"],nameId["Bleu de Chanel EDP"],nameId["Layton"]];
-  const art=ids.map(id=>plate(id,84,122,10)).join('');
-  return `<div class="center scrn"><div class="introart">${art}</div>
-    <div class="logo">accord</div>
-    <h1>Rank fragrances by choosing <b>which you'd rather wear</b>.</h1>
-    <p>No 1&ndash;10 ratings. Just tap the one you prefer &mdash; Accord builds your taste from your choices.</p>
-    <button class="btn" data-go="pick">Get started</button></div>`;}
+function viewIntro(){
+  return `<div class="intro scrn">
+    <div class="intromid"><div class="ilogo">accord</div><div class="itag">for fragrances</div></div>
+    <div class="ibot"><div class="isub">Rank what you'd rather wear &mdash; then discover through people who share your taste.</div>
+      <button class="btn" data-go="pick">Get started</button></div></div>`;}
 
 function viewPick(){const q=V.pickQuery.trim().toLowerCase();
   const src=q?F.map((f,i)=>i).filter(i=>(F[i][0]+' '+F[i][1]).toLowerCase().includes(q)).slice(0,30):STARTERS;
