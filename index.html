@@ -87,6 +87,8 @@
   .followbtn{flex:none;padding:8px 18px;border-radius:20px;border:1.5px solid var(--line-dk);font-size:13px;font-weight:700;color:var(--accent);background:none}
   .followbtn.on{background:var(--accent);color:#fff}
   .followbtn:active{opacity:.7}
+  .ptick{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line-dk);display:grid;place-items:center;color:#fff;flex:none;transition:background .12s}
+  .ptick.on{background:var(--accent);border-color:var(--accent)}
 
   /* generic rows / lists */
   .list{padding:0 18px}
@@ -333,14 +335,19 @@ const MONO={"Parfums de Marly":"PdM","Jean Paul Gaultier":"JPG","Tom Ford":"TF",
 function mono(b){if(MONO[b])return MONO[b];const w=b.split(/\s+/);if(w.length>1)return w.map(x=>x[0]).join('').toUpperCase().slice(0,3);return b.length<=4?b.toUpperCase():b.slice(0,3).toUpperCase();}
 function markLayer(id){const m=plateOf(id)[1];const mm=mono(F[id][1]);const fs=Math.min(50,128/Math.max(2,mm.length));
  return `<span style="position:absolute;inset:0;display:grid;place-items:center;padding:0 6%"><span style="font-family:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;font-weight:700;color:${m};font-size:${fs}cqw;line-height:1;letter-spacing:-.03em;white-space:nowrap">${esc(mm)}</span></span>`;}
+/* Optional real bottle photos. Add entries like  "Naxos":"images/naxos.jpg"  and the
+   photo replaces the monogram tile automatically (monogram stays as fallback if it fails
+   to load). Use images you have the rights to (your own, licensed, or public-domain). */
+const IMG={};
+function imgLayer(id){const u=IMG[F[id][0]];return u?`<img src="${esc(u)}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()">`:'';}
 function vignette(r){return `<span style="position:absolute;inset:0;border-radius:${r}px;box-shadow:inset 0 0 0 1.4px var(--line-dk)"></span>`;}
 function plate(id,w,h,r){const[g]=plateOf(id);r=r==null?7:r;
- return `<span style="display:block;width:${w}px;height:${h}px;border-radius:${r}px;background:${g};position:relative;overflow:hidden;container-type:inline-size;flex:none">${markLayer(id)}${vignette(r)}</span>`;}
+ return `<span style="display:block;width:${w}px;height:${h}px;border-radius:${r}px;background:${g};position:relative;overflow:hidden;container-type:inline-size;flex:none">${markLayer(id)}${imgLayer(id)}${vignette(r)}</span>`;}
 function plateFlex(id,ratio,r){const[g]=plateOf(id);r=r==null?8:r;
- return `<span style="display:block;width:100%;aspect-ratio:1/${ratio};border-radius:${r}px;background:${g};position:relative;overflow:hidden;container-type:inline-size">${markLayer(id)}${vignette(r)}</span>`;}
+ return `<span style="display:block;width:100%;aspect-ratio:1/${ratio};border-radius:${r}px;background:${g};position:relative;overflow:hidden;container-type:inline-size">${markLayer(id)}${imgLayer(id)}${vignette(r)}</span>`;}
 function plateFill(id,r){const[g]=plateOf(id);r=r==null?10:r;
- return `<span style="display:block;width:100%;height:100%;border-radius:${r}px;background:${g};position:relative;overflow:hidden;container-type:inline-size">${markLayer(id)}${vignette(r)}</span>`;}
-function plateCell(id){const[g]=plateOf(id);return `<span style="display:block;width:100%;height:100%;background:${g};position:relative;overflow:hidden;container-type:inline-size">${markLayer(id)}</span>`;}
+ return `<span style="display:block;width:100%;height:100%;border-radius:${r}px;background:${g};position:relative;overflow:hidden;container-type:inline-size">${markLayer(id)}${imgLayer(id)}${vignette(r)}</span>`;}
+function plateCell(id){const[g]=plateOf(id);return `<span style="display:block;width:100%;height:100%;background:${g};position:relative;overflow:hidden;container-type:inline-size">${markLayer(id)}${imgLayer(id)}</span>`;}
 
 const IC={plus:'<path d="M12 5v14M5 12h14"/>',chevL:'<path d="M15 5l-7 7 7 7"/>',chevR:'<path d="M9 5l7 7-7 7"/>',
  search:'<circle cx="11" cy="11" r="7.2"/><path d="M21 21l-4.4-4.4"/>',check:'<path d="M20 6.5L9.2 17.3 4 12.1"/>',x:'<path d="M18 6L6 18M6 6l12 12"/>',
@@ -368,7 +375,7 @@ function notifItems(){const out=[];const data=TWINS.map(t=>({t,d:twinData(t)})).
   if(data[0])out.push({name:data[0].t.name,text:`You're a ${data[0].d.match}% taste match`,sub:'See their shelf',person:data[0].t.name});
   data.slice(0,3).forEach(({t})=>{const id=nameId[t.picks[0]];if(id!=null&&!isFollowing(t.name))out.push({name:t.name,text:`ranked ${F[id][0]} #1`,sub:isFollowing(t.name)?'':'Tap to follow',person:t.name,frag:id});});
   return out;}
-let V={screen:S.onboarded?'main':'intro',tab:'home',pickSel:[],queue:[],cur:null,curBucket:null,lo:0,hi:0,src:'add',onbTotal:0,cmpN:0,placed:null,query:'',detailId:null,detailBack:'home',homeSeg:'recs',profSeg:'ranking',rankFam:'all',explore:null,guideRef:null,liked:{},composeBody:'',composeAttach:null,gTitle:'',gIds:[],gQuery:'',recFrag:null,recTo:null,personName:null,personBack:'activity'};
+let V={screen:S.onboarded?'main':'intro',tab:'home',pickSel:[],queue:[],cur:null,curBucket:null,lo:0,hi:0,src:'add',onbTotal:0,cmpN:0,placed:null,query:'',detailId:null,detailBack:'home',homeSeg:'recs',profSeg:'ranking',rankFam:'all',explore:null,guideRef:null,liked:{},composeBody:'',composeAttach:null,gTitle:'',gIds:[],gQuery:'',recFrag:null,recTo:null,personName:null,personBack:'activity',pickQuery:''};
 function relTime(ts){const d=Date.now()-ts;const m=Math.floor(d/60000);if(m<1)return'Just now';if(m<60)return m+'m ago';const h=Math.floor(m/60);if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';}
 
 /* ================= ranking ================= */
@@ -414,6 +421,7 @@ function twinData(t){const ids=t.picks.map(n=>nameId[n]).filter(x=>x!=null);cons
   const conf=overlap.length>=4?"High confidence":overlap.length>=2?"Growing":"Early estimate";
   return{match,conf,shared:overlap.map(id=>F[id][0]).slice(0,3),theirTop:ids.find(id=>!inRanking(id)),ids};}
 const TRENDING=["Khamrah","Ombre Nomade","9pm","Fan Your Flames","Bitter Peach","Imagination","Asad","Erba Pura","Oud for Greatness","Delina","Naxos","Baccarat Rouge 540"].map(n=>nameId[n]).filter(x=>x!=null);
+const STARTERS=["Sauvage EDT","Bleu de Chanel EDP","Dior Homme Intense","Y EDP","Aventus","Baccarat Rouge 540","Le Male","Eros","1 Million","Acqua di Gio Profumo","Naxos","Layton","Tobacco Vanille","Oud Wood","Khamrah","Stronger With You","Good Girl","Black Opium","La Vie Est Belle","Coco Mademoiselle"].map(n=>nameId[n]).filter(x=>x!=null);
 const GUIDES=[
  {t:"Sweet Beast Mode",f:["Khamrah","Naxos","9pm","Fan Your Flames","Uomo Intense"]},
  {t:"Fresh & Clean",f:["Bleu de Chanel EDP","Sauvage EDT","Acqua di Gio Profumo","Silver Mountain Water","Allure Homme Sport"]},
@@ -457,13 +465,17 @@ function viewIntro(){const ids=[nameId["Naxos"],nameId["Bleu de Chanel EDP"],nam
     <p>No 1&ndash;10 ratings. Just tap the one you prefer &mdash; Accord builds your taste from your choices.</p>
     <button class="btn" data-go="pick">Get started</button></div>`;}
 
-function viewPick(){const cells=F.map((f,i)=>{const sel=V.pickSel.includes(i);
-  return `<button class="pick ${sel?'sel':''}" data-pick="${i}"><span class="pw">${plateFlex(i,1.32,11)}<span class="selring"></span><span class="tick">${icon('check',12,2.6)}</span></span>
-    <span><span class="pn">${esc(f[0])}</span><span class="ph">${esc(f[1])}</span></span></button>`;}).join('');
+function viewPick(){const q=V.pickQuery.trim().toLowerCase();
+  const src=q?F.map((f,i)=>i).filter(i=>(F[i][0]+' '+F[i][1]).toLowerCase().includes(q)).slice(0,30):STARTERS;
+  const rows=src.map(i=>{const sel=V.pickSel.includes(i);
+    return `<button class="row" data-pick="${i}">${plate(i,44,58,10)}<div class="meta"><div class="nm">${esc(F[i][0])}</div><div class="hs">${esc(F[i][1])}</div></div><span class="ptick ${sel?'on':''}">${sel?icon('check',14,2.6):''}</span></button>`;}).join('')||`<div class="disc" style="text-align:center;padding-top:30px">No matches. Try another spelling.</div>`;
   const n=V.pickSel.length,ready=n>=4;
-  return `<div class="top"><div class="htitle"><div class="kick eyebrow">Step 1 &middot; ${n} selected</div><h1>Which have you tried?</h1></div></div>
-    <div class="fill"><div class="grid">${cells}</div></div>
-    <div class="foot"><button class="btn" ${ready?'data-startonb=1':'disabled'}>${ready?'Start ranking':`Choose ${4-n} more`}</button></div>`;}
+  return `<div class="top" style="padding-bottom:8px"><div class="htitle"><div class="kick eyebrow">Step 1 &middot; ${n} selected</div><h1>Which have you tried?</h1></div></div>
+    <div style="padding:2px 18px 8px"><div class="searchbar" style="margin:0"><span style="color:var(--muted)">${icon('search',18)}</span><input id="pickq" placeholder="Search any fragrance or house" value="${esc(V.pickQuery)}" autocomplete="off" style="flex:1;border:0;background:none;outline:none;font-size:16px;color:var(--ink);font-family:inherit;font-weight:500"></div></div>
+    ${q?'':`<div class="shead" style="padding:4px 18px 4px"><div class="st">Popular to start</div></div>`}
+    <div class="fill"><div class="list">${rows}</div>
+      ${q?'':`<div class="disc" style="text-align:center">Tried something else? <span class="link">Search above</span> to add it.</div>`}</div>
+    <div class="foot"><button class="btn" ${ready?'data-startonb=1':'disabled'}>${ready?`Start ranking &middot; ${n}`:`Pick ${4-n} you've tried`}</button></div>`;}
 
 function progress(){if(V.src!=='onboard'||!V.onbTotal)return '';const k=V.onbTotal-V.queue.length;const pct=Math.round((k-.4)/V.onbTotal*100);
   return `<div class="pgwrap"><div class="pgbar"><i style="width:${pct}%"></i></div></div>`;}
@@ -683,10 +695,11 @@ function focusSearch(){const q=app.querySelector('#q');if(q){const p=q.value.len
 function openDetail(id){V.detailBack=(V.screen==='main')?V.tab:(V.screen==='addsearch'?'home':(V.screen==='guide'?'home':V.detailBack));V.detailId=id;V.screen='detail';render();}
 function bind(){
   app.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const g=b.dataset.go;
-    if(g==='pick'){V.screen='pick';V.pickSel=[];}else if(g==='main'){V.screen='main';if(b.dataset.tab)V.tab=b.dataset.tab;}
+    if(g==='pick'){V.screen='pick';V.pickSel=[];V.pickQuery='';}else if(g==='main'){V.screen='main';if(b.dataset.tab)V.tab=b.dataset.tab;}
     else if(g==='addsearch'){V.screen='addsearch';V.query='';}else if(g==='card')V.screen='card';else if(g==='compose')V.screen='compose';
     else if(g==='guides')V.screen='guides';else if(g==='guidenew'){V.gTitle='';V.gIds=[];V.gQuery='';V.screen='guidenew';}render();});
   app.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{const i=+b.dataset.pick,k=V.pickSel.indexOf(i);if(k>=0)V.pickSel.splice(k,1);else V.pickSel.push(i);render();});
+  const pq=app.querySelector('#pickq');if(pq)pq.oninput=()=>{V.pickQuery=pq.value;const p=pq.selectionStart;app.innerHTML=viewPick();bind();const n=app.querySelector('#pickq');if(n){n.focus();try{n.setSelectionRange(p,p);}catch(e){}}};
   const so=app.querySelector('[data-startonb]');if(so)so.onclick=()=>startInsert(V.pickSel,'onboard');
   app.querySelectorAll('[data-bucket]').forEach(b=>b.onclick=()=>chooseBucket(b.dataset.bucket));
   app.querySelectorAll('[data-cmp]').forEach(b=>b.onclick=()=>{const v=b.dataset.cmp;if(v==='close'){tooClose();return;}
@@ -719,7 +732,7 @@ function bind(){
   app.querySelectorAll('[data-attach]').forEach(b=>b.onclick=()=>{const t=app.querySelector('#postbody');if(t)V.composeBody=t.value;const id=+b.dataset.attach;V.composeAttach=V.composeAttach===id?null:id;render();});
   const pb=app.querySelector('[data-post]');if(pb)pb.onclick=()=>{const t=app.querySelector('#postbody');const body=(t?t.value:V.composeBody).trim();if(!body)return;S.posts.unshift({id:Date.now(),body,frag:V.composeAttach,createdAt:Date.now()});V.composeBody='';V.composeAttach=null;save();V.screen='main';V.tab='home';render();};
   const pt=app.querySelector('#postbody');if(pt)pt.oninput=()=>{V.composeBody=pt.value;const w=pt.value.trim()?pt.value.trim().split(/\s+/).length:0;const c=app.querySelector('#pcount');if(c)c.textContent=w+'/50 words';const x=app.querySelector('[data-post]');if(x)x.classList.toggle('on',!!pt.value.trim());};
-  const rb=app.querySelector('[data-reset]');if(rb)rb.onclick=()=>{if(confirm('Reset everything?')){S={onboarded:false,ranking:[],owned:[],tried:[],want:[],posts:[],guides:[],sentRecs:[],following:[],notifSeen:false};save();V={screen:'intro',tab:'home',pickSel:[],queue:[],cur:null,query:'',detailBack:'home',homeSeg:'recs',profSeg:'ranking',rankFam:'all',explore:null,guideRef:null,liked:{},composeBody:'',composeAttach:null,gTitle:'',gIds:[],gQuery:'',recFrag:null,recTo:null,personName:null,personBack:'activity'};render();}};
+  const rb=app.querySelector('[data-reset]');if(rb)rb.onclick=()=>{if(confirm('Reset everything?')){S={onboarded:false,ranking:[],owned:[],tried:[],want:[],posts:[],guides:[],sentRecs:[],following:[],notifSeen:false};save();V={screen:'intro',tab:'home',pickSel:[],queue:[],cur:null,query:'',detailBack:'home',homeSeg:'recs',profSeg:'ranking',rankFam:'all',explore:null,guideRef:null,liked:{},composeBody:'',composeAttach:null,gTitle:'',gIds:[],gQuery:'',recFrag:null,recTo:null,personName:null,personBack:'activity',pickQuery:''};render();}};
   const q=app.querySelector('#q');if(q)q.oninput=()=>{V.query=q.value;const p=q.selectionStart;app.innerHTML=viewAddSearch();bind();const nq=app.querySelector('#q');if(nq){nq.focus();try{nq.setSelectionRange(p,p);}catch(e){}}};
 }
 render();
