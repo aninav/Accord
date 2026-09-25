@@ -77,6 +77,8 @@
   .flikes{font-size:13px;color:var(--ink-2);margin-top:10px;font-weight:500}
   .factions{display:flex;align-items:center;gap:20px;margin-top:12px;color:var(--ink)}
   .factions .liked{color:var(--accent)}
+  .factions .liked .hrt-e{display:none}
+  .factions button:not(.liked) .hrt-f{display:none}
   .factions .chk{margin-left:auto;color:var(--green)}
   .ftime{font-size:12px;color:var(--muted);margin-top:11px}
   .composebar{display:flex;align-items:center;gap:12px;width:calc(100% - 36px);margin:0 18px 4px;padding:10px 14px 10px 10px;border:1.5px solid var(--line-dk);border-radius:26px;color:var(--muted);font-weight:500;font-size:14.5px}
@@ -557,7 +559,7 @@ function feedCard(x){const liked=V.liked[x.id];
     <div class="finfo"><div class="ftitle"><b>${esc(x.name)}</b> ranked <b>${esc(F[x.id][0])}</b></div><div class="fsub">${esc(F[x.id][1])}</div></div>${scoreCircle(x.score)}</div>
     <div class="fnotes"><b>Notes:</b> ${esc(F[x.id][2].slice(0,3).join(', '))}</div></button>
     <div class="flikes">${x.likes+(liked?1:0)} likes</div>
-    <div class="factions"><button class="${liked?'liked':''}" data-like="${x.id}">${icon(liked?'heartf':'heartn',22)}</button><button data-detail="${x.id}">${icon('comment',21)}</button><button data-detail="${x.id}">${icon('share',20)}</button><span class="chk">${icon('check',20,2.2)}</span></div>
+    <div class="factions"><button class="${liked?'liked':''}" data-like="${x.id}"><span class="hrt-e">${icon('heartn',22)}</span><span class="hrt-f">${icon('heartf',22)}</span></button><button data-frag="${x.id}">${icon('comment',21)}</button><button data-frag="${x.id}">${icon('share',20)}</button><span class="chk">${icon('check',20,2.2)}</span></div>
     <div class="ftime">${esc(x.time)}</div></div>`;}
 function friendFeed(){return TWINS.map(t=>{const d=twinData(t);const unt=d.ids.find(id=>!isTried(id));return{name:t.name,match:d.match,fragId:unt!=null?unt:d.ids[0],untried:unt!=null};}).sort((a,b)=>b.match-a.match);}
 
@@ -615,12 +617,14 @@ function tabProfile(){const top=`<div class="hbar"><div class="brand" style="col
     <div style="padding:22px 18px 30px"><button class="danger" data-reset=1>Reset everything</button></div></div>`;}
 
 function viewGuide(){const g=getGuide(V.guideRef);if(!g)return viewGuides();const cover=g.ids.slice(0,4).map(id=>plateCell(id)).join('');const tried=g.ids.filter(id=>isTried(id)).length;
-  return `<div class="dwrap scrn"><div class="backbar" style="position:absolute;background:none;z-index:6"><button data-go="guides" style="background:rgba(0,0,0,.28);color:#fff">${icon('chevL',22)}</button>${g.mine?`<button data-delguide="${g.idx}" style="background:rgba(0,0,0,.28);color:#fff">${icon('x',20)}</button>`:'<span></span>'}</div>
+  return `<div class="dwrap scrn"><div class="backbar" style="position:absolute;background:none;z-index:6"><button data-go="guides" style="background:rgba(0,0,0,.28);color:#fff">${icon('chevL',22)}</button><button data-go="guides" style="background:rgba(0,0,0,.28);color:#fff">${icon('x',20)}</button></div>
     <div class="ghero">${cover}<div class="gov"><div class="eyebrow" style="color:rgba(255,255,255,.8)">${g.mine?'Your guide':'Guide'} &middot; ${g.ids.length} fragrances</div><div class="gt">${esc(g.title)}</div><div class="gprog" style="margin-top:6px">You've tried ${tried} of ${g.ids.length}</div></div></div>
-    <div class="list" style="padding-top:6px">${g.ids.map(id=>{const r=rankOf(id);return `<button class="row" data-detail="${id}">${plate(id,40,54,8)}<div class="meta"><div class="nm">${esc(F[id][0])}</div><div class="hs">${esc(F[id][1])}</div></div>${r>=0?scoreCircle(scoreAt(r),1):`<span class="addbtn" data-tried="${id}">${icon('plus',17)}</span>`}</button>`;}).join('')}</div><div style="height:24px"></div></div>`;}
+    <div class="list" style="padding-top:6px">${g.ids.map(id=>{const r=rankOf(id);return `<button class="row" data-detail="${id}">${plate(id,40,54,8)}<div class="meta"><div class="nm">${esc(F[id][0])}</div><div class="hs">${esc(F[id][1])}</div></div>${r>=0?scoreCircle(scoreAt(r),1):`<span class="addbtn" data-tried="${id}">${icon('plus',17)}</span>`}</button>`;}).join('')}</div>
+    ${g.mine?`<div style="padding:16px 18px 8px"><button class="danger" data-delguide="${g.idx}" style="width:100%;text-align:center;padding:12px">Delete guide</button></div>`:''}
+    <div style="height:24px"></div></div>`;}
 
 function viewGuides(){const gs=allGuides();
-  return `<div class="top"><div class="htitle"><h1>Guides</h1></div><button class="hbtn solid" data-go="guidenew">${icon('plus',20)}</button></div>
+  return `<div class="hbar"><button style="color:var(--ink-2)" data-go="main">${icon('x',22)}</button><div class="brand" style="color:var(--ink);font-size:20px">Guides</div><button class="hbtn solid" data-go="guidenew">${icon('plus',20)}</button></div>
     <div class="fill scrn"><div style="padding:2px 18px 8px"><button class="btn" data-go="guidenew">${icon('plus',17)} Create a guide</button></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px;padding:10px 18px 24px">${gs.map(g=>guideCard(g)).join('')}</div></div>`;}
 
@@ -649,11 +653,11 @@ function viewRecommend(){const id=V.recFrag;const data=TWINS.map(t=>({t,d:twinDa
 function viewNotifs(){const items=notifItems();
   const rows=items.map(n=>`<button class="row" ${n.frag!=null?`data-detail="${n.frag}"`:`data-person="${n.person}"`}><div class="avatar" style="width:42px;height:42px;font-size:16px">${esc(n.name[0])}</div>
     <div class="meta"><div class="nm" style="font-weight:500"><b>${esc(n.name)}</b> ${esc(n.text)}</div>${n.sub?`<div class="hs" style="color:var(--accent)">${esc(n.sub)}</div>`:''}</div>${n.frag!=null?plate(n.frag,40,54,8):`<span style="color:var(--faint)">${icon('chevR',18)}</span>`}</button>`).join('');
-  return `<div class="hbar" style="padding-bottom:8px"><button style="color:var(--ink-2)" data-go="main">${icon('chevL',22)}</button><div class="brand" style="color:var(--ink);font-size:18px">Notifications</div><span style="width:22px"></span></div>
+  return `<div class="hbar" style="padding-bottom:8px"><button style="color:var(--ink-2)" data-go="main">${icon('chevL',22)}</button><div class="brand" style="color:var(--ink);font-size:18px">Notifications</div><button style="color:var(--ink-2)" data-go="main">${icon('x',22)}</button></div>
     <div class="fill scrn"><div class="list">${rows||emptyList('Nothing yet. Rank fragrances and follow people to get updates.')}</div></div>`;}
 
 function viewPerson(name){const t=TWINS.find(x=>x.name===name);if(!t)return viewMain();const d=twinData(t);const ids=t.picks.map(n=>nameId[n]).filter(x=>x!=null);const foll=isFollowing(name);
-  return `<div class="dwrap scrn"><div class="backbar"><button data-go="main" data-tab="${V.personBack}">${icon('chevL',22)}</button><span></span></div>
+  return `<div class="dwrap scrn"><div class="backbar"><button data-go="main" data-tab="${V.personBack}">${icon('chevL',22)}</button><button data-go="main" data-tab="${V.personBack}" style="width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2)">${icon('x',20)}</button></div>
     <div style="text-align:center;padding:4px 24px 6px"><div class="avatar" style="width:84px;height:84px;font-size:34px;margin:0 auto 14px">${esc(t.name[0])}</div>
       <h1 style="font-size:27px;font-weight:700;letter-spacing:-.02em;margin:0">${esc(t.name)}</h1><div style="color:var(--muted);font-size:14px;margin-top:2px">${esc(t.vibe)}</div>
       <div style="display:inline-flex;margin:16px 0 4px;border:1.5px solid var(--line-dk);border-radius:14px;overflow:hidden">
@@ -684,14 +688,14 @@ function viewDetail(){const id=V.detailId,idx=rankOf(id);const ranked=idx>=0;
 
 function viewCard(){const dna=topAccords(3).map(d=>d.a[0].toUpperCase()+d.a.slice(1)).join(', ');
   const items=S.ranking.slice(0,5).map((it,i)=>`<div class="pi"><div class="pr num">${i+1}</div>${plate(it.id,30,42,6)}<div><div class="pn2">${esc(F[it.id][0])}</div><div class="ph2">${esc(F[it.id][1])}</div></div></div>`).join('');
-  return `<div class="cardscreen scrn"><div class="cardtop"><button data-go="main" data-tab="profile">${icon('chevL',22)}</button><span class="hint">Screenshot to share</span><span style="width:38px"></span></div>
+  return `<div class="cardscreen scrn"><div class="cardtop"><button data-go="main" data-tab="profile">${icon('chevL',22)}</button><span class="hint">Screenshot to share</span><button data-go="main" data-tab="profile">${icon('x',22)}</button></div>
     <div class="poster"><div class="pk">Accord &middot; my fragrance DNA</div><div class="pdna">${dna||'Just getting started'}</div>
       <div class="plist">${items}</div><div class="pwm" style="margin-top:auto">accord</div><div class="pf">${S.ranking.length} fragrances ranked</div></div></div>`;}
 
 function viewAddSearch(){const q=V.query.trim().toLowerCase();
   const list=F.map((f,i)=>i).filter(i=>!inRanking(i)).filter(i=>!q||(F[i][0]+' '+F[i][1]).toLowerCase().includes(q)).slice(0,50);
   const rows=list.map(i=>recRow(i)).join('')||`<div class="empty">No matches for &ldquo;${esc(V.query)}&rdquo;.</div>`;
-  return `<div class="hbar" style="padding-bottom:6px"><button style="color:var(--ink-2)" data-go="main">${icon('chevL',22)}</button><div class="brand" style="color:var(--ink);font-size:20px">Add &amp; rank</div><span style="width:22px"></span></div>
+  return `<div class="hbar" style="padding-bottom:6px"><button style="color:var(--ink-2)" data-go="main">${icon('chevL',22)}</button><div class="brand" style="color:var(--ink);font-size:20px">Add &amp; rank</div><button style="color:var(--ink-2)" data-go="main">${icon('x',22)}</button></div>
     <div style="padding:2px 18px 10px"><div class="searchbar" style="margin:0"><span style="color:var(--muted)">${icon('search',18)}</span><input id="q" style="flex:1;border:0;background:none;outline:none;font-size:16px;color:var(--ink);font-family:inherit;font-weight:500" placeholder="Search fragrance or house" value="${esc(V.query)}" autocomplete="off"></div></div>
     <div class="fill"><div class="list">${rows}</div></div>`;}
 function focusSearch(){const q=app.querySelector('#q');if(q){const p=q.value.length;q.focus();try{q.setSelectionRange(p,p);}catch(e){}}}
@@ -726,7 +730,8 @@ function bind(){
   app.querySelectorAll('[data-notifs]').forEach(b=>b.onclick=()=>{V.screen='notifs';S.notifSeen=true;save();render();});
   app.querySelectorAll('[data-person]').forEach(b=>b.onclick=()=>{if(V.screen==='main')V.personBack=V.tab;V.personName=b.dataset.person;V.screen='person';render();});
   app.querySelectorAll('[data-follow]').forEach(b=>b.onclick=e=>{e.stopPropagation();const n=b.dataset.follow,k=S.following.indexOf(n);if(k>=0)S.following.splice(k,1);else S.following.push(n);save();render();});
-  app.querySelectorAll('[data-like]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=+b.dataset.like;V.liked[id]=!V.liked[id];render();});
+  app.querySelectorAll('[data-like]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=+b.dataset.like;V.liked[id]=!V.liked[id];const on=V.liked[id];b.classList.toggle('liked',on);const frow=b.closest('.frow');if(frow){const fl=frow.querySelector('.flikes');if(fl){const cur=+fl.textContent.replace(/\D/g,'');fl.textContent=(cur+(on?1:-1))+' likes';}}});
+  app.querySelectorAll('[data-frag]').forEach(b=>b.onclick=e=>{e.stopPropagation();openDetail(+b.dataset.frag);});
   app.querySelectorAll('[data-rerank]').forEach(b=>b.onclick=()=>rerank(+b.dataset.rerank));
   app.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{if(confirm('Remove this from your ranking?'))removeF(+b.dataset.remove);});
   app.querySelectorAll('[data-homeseg]').forEach(b=>b.onclick=()=>{V.homeSeg=b.dataset.homeseg;render();});
