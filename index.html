@@ -376,7 +376,7 @@ function scoreCircle(s,sm){const t=s>=6.8?'hi':s>=3.4?'mid':'lo';return `<span c
 /* ================= state ================= */
 const KEY='accord_v3';let S=load();
 function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.ranking){r.owned=r.owned||[];r.tried=r.tried||[];r.want=r.want||[];r.posts=r.posts||[];r.guides=r.guides||[];r.sentRecs=r.sentRecs||[];r.following=r.following||[];r.notifSeen=r.notifSeen||false;return r;}}catch(e){}return{onboarded:false,ranking:[],owned:[],tried:[],want:[],posts:[],guides:[],sentRecs:[],following:[],notifSeen:false};}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({onboarded:S.onboarded,ranking:S.ranking,owned:S.owned,tried:S.tried,want:S.want,posts:S.posts,guides:S.guides,sentRecs:S.sentRecs,following:S.following,notifSeen:S.notifSeen}));}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({onboarded:S.onboarded,ranking:S.ranking,owned:S.owned,tried:S.tried,want:S.want,posts:S.posts,guides:S.guides,sentRecs:S.sentRecs,following:S.following,notifSeen:S.notifSeen}));}catch(e){if(e.name==='QuotaExceededError'||e.code===22)alert('Storage full \u2014 your last change was not saved. Export your data from your profile to back it up.');}}
 function isFollowing(n){return S.following.includes(n);}
 function notifItems(){const out=[];const data=TWINS.map(t=>({t,d:twinData(t)})).sort((a,b)=>b.d.match-a.d.match);
   data.slice(0,2).forEach(({t,d})=>{if(d.theirTop!=null)out.push({name:t.name,frag:d.theirTop,text:`recommends ${F[d.theirTop][0]}`,sub:`${d.match}% taste match`,person:t.name});});
@@ -399,10 +399,10 @@ function chooseBucket(b){V.curBucket=b;const[lo,hi]=bandRange(b);V.lo=lo;V.hi=hi
 function cstep(){return Math.floor((V.lo+V.hi)/2);}
 function chooseCompare(pn){V.cmpN++;const m=cstep();if(pn)V.hi=m;else V.lo=m+1;if(V.lo>=V.hi)placeAt(V.lo);else render();}
 function tooClose(){V.cmpN++;placeAt(cstep());}
-function placeAt(pos){S.ranking.splice(pos,0,{id:V.cur,bucket:V.curBucket});S.want=S.want.filter(x=>x!==V.cur);save();V.placed={id:V.cur};
+function placeAt(pos){S.ranking.splice(pos,0,{id:V.cur,bucket:V.curBucket});S.want=S.want.filter(x=>x!==V.cur);_recsCache=null;_dnaCache=null;save();V.placed={id:V.cur};
   if(V.src==='onboard'){if(!V.queue.length){S.onboarded=true;save();V.screen='reveal';render();}else nextInsert();}else{V.screen='result';render();}}
 function rerank(id){S.ranking=S.ranking.filter(it=>it.id!==id);save();startInsert([id],'add');}
-function removeF(id){S.ranking=S.ranking.filter(it=>it.id!==id);save();V.screen='main';render();}
+function removeF(id){S.ranking=S.ranking.filter(it=>it.id!==id);_recsCache=null;_dnaCache=null;save();V.screen='main';render();}
 function isTried(id){return inRanking(id)||S.tried.includes(id);}
 function isOwned(id){return S.owned.includes(id);}
 function isWant(id){return S.want.includes(id);}
@@ -410,12 +410,14 @@ function tog(kind,id){const arr=S[kind];const i=arr.indexOf(id);if(i>=0)arr.spli
 function triedIds(){const s=new Set(S.tried);S.ranking.forEach(r=>s.add(r.id));return[...s];}
 
 /* ================= taste ================= */
+let _recsCache=null,_recsCacheKey='',_dnaCache=null,_dnaCacheKey='';
+function _rankKey(){return S.ranking.map(r=>r.id+':'+r.bucket).join(',');}
 function weightsFor(order){const w={};order.forEach((id,idx)=>{const s=10-idx*(6/Math.max(1,order.length));if(s<4)return;for(const a of F[id][2])w[a]=(w[a]||0)+(s-3.5);});return w;}
 function myWeights(){const w={};S.ranking.forEach((it,idx)=>{const s=scoreAt(idx);if(s<5)return;for(const a of F[it.id][2])w[a]=(w[a]||0)+(s-4.5);});return w;}
 function cosine(a,b){let d=0,na=0,nb=0;const ks=new Set([...Object.keys(a),...Object.keys(b)]);for(const k of ks){const x=a[k]||0,y=b[k]||0;d+=x*y;na+=x*x;nb+=y*y;}return(!na||!nb)?0:d/(Math.sqrt(na)*Math.sqrt(nb));}
-function recs(limit){const w=myWeights();if(!S.ranking.length)return[];const out=[];for(let i=0;i<F.length;i++){if(inRanking(i))continue;let sc=0;for(const a of F[i][2])sc+=(w[a]||0);sc/=Math.sqrt(F[i][2].length);if(sc<=0)continue;let best=null,bv=-1;for(const a of F[i][2])if((w[a]||0)>bv){bv=w[a]||0;best=a;}out.push({id:i,sc,why:best});}out.sort((a,b)=>b.sc-a.sc);return out.slice(0,limit||8);}
+function recs(limit){const k=_rankKey();if(_recsCache&&_recsCacheKey===k)return _recsCache.slice(0,limit||8);const w=myWeights();if(!S.ranking.length){_recsCache=[];_recsCacheKey=k;return[];}const out=[];for(let i=0;i<F.length;i++){if(inRanking(i))continue;let sc=0;for(const a of F[i][2])sc+=(w[a]||0);sc/=Math.sqrt(F[i][2].length);if(sc<=0)continue;let best=null,bv=-1;for(const a of F[i][2])if((w[a]||0)>bv){bv=w[a]||0;best=a;}out.push({id:i,sc,why:best});}out.sort((a,b)=>b.sc-a.sc);_recsCache=out;_recsCacheKey=k;return out.slice(0,limit||8);}
 function twinRecs(limit){const sc={};TWINS.forEach(t=>{const d=twinData(t);const wt=d.match/100;d.ids.forEach((id,idx)=>{if(inRanking(id))return;if(!sc[id])sc[id]={s:0,by:t.name,bym:d.match};sc[id].s+=wt*(1-idx/d.ids.length);if(d.match>sc[id].bym){sc[id].by=t.name;sc[id].bym=d.match;}});});return Object.entries(sc).map(([id,o])=>({id:+id,s:o.s,by:o.by})).sort((a,b)=>b.s-a.s).slice(0,limit||6);}
-function topAccords(n){const w=myWeights();const arr=Object.entries(w).sort((a,b)=>b[1]-a[1]);const mx=arr.length?arr[0][1]:1;return arr.slice(0,n||5).map(([a,v])=>({a,pct:Math.max(14,Math.round(v/mx*100))}));}
+function topAccords(n){const k=_rankKey();if(_dnaCache&&_dnaCacheKey===k)return _dnaCache.slice(0,n||5);const w=myWeights();const arr=Object.entries(w).sort((a,b)=>b[1]-a[1]);const mx=arr.length?arr[0][1]:1;_dnaCache=arr.map(([a,v])=>({a,pct:Math.max(14,Math.round(v/mx*100))}));_dnaCacheKey=k;return _dnaCache.slice(0,n||5);}
 function similarTo(id,n){const acc=new Set(F[id][2]);const out=[];for(let i=0;i<F.length;i++){if(i===id||inRanking(i))continue;let o=0;for(const a of F[i][2])if(acc.has(a))o++;if(o)out.push({id:i,o});}return out.sort((a,b)=>b.o-a.o).slice(0,n||3);}
 function famRanking(fam){const out=[];S.ranking.forEach((it,idx)=>{if(fam==='all'||F[it.id][2].includes(fam))out.push({id:it.id,score:scoreAt(idx)});});return out;}
 const TWINS=[
@@ -429,7 +431,7 @@ function twinData(t){const ids=t.picks.map(n=>nameId[n]).filter(x=>x!=null);cons
   const conf=overlap.length>=4?"High confidence":overlap.length>=2?"Growing":"Early estimate";
   return{match,conf,shared:overlap.map(id=>F[id][0]).slice(0,3),theirTop:ids.find(id=>!inRanking(id)),ids};}
 const TRENDING=["Khamrah","Ombre Nomade","9pm","Fan Your Flames","Bitter Peach","Imagination","Asad","Erba Pura","Oud for Greatness","Delina","Naxos","Baccarat Rouge 540"].map(n=>nameId[n]).filter(x=>x!=null);
-const STARTERS=["Sauvage EDT","Bleu de Chanel EDP","Dior Homme Intense","Y EDP","Aventus","Baccarat Rouge 540","Le Male","Eros","1 Million","Acqua di Gio Profumo","Naxos","Layton","Tobacco Vanille","Oud Wood","Khamrah","Stronger With You","Good Girl","Black Opium","La Vie Est Belle","Coco Mademoiselle"].map(n=>nameId[n]).filter(x=>x!=null);
+const STARTERS=["Sauvage EDT","Bleu de Chanel EDP","Homme Intense","Y EDP","Aventus","Baccarat Rouge 540","Le Male","Eros","1 Million","Acqua di Gio Profumo","Naxos","Layton","Tobacco Vanille","Oud Wood","Khamrah","Stronger With You","Good Girl","Black Opium","La Vie Est Belle","Coco Mademoiselle"].map(n=>nameId[n]).filter(x=>x!=null);
 const GUIDES=[
  {t:"Sweet Beast Mode",f:["Khamrah","Naxos","9pm","Fan Your Flames","Uomo Intense"]},
  {t:"Fresh & Clean",f:["Bleu de Chanel EDP","Sauvage EDT","Acqua di Gio Profumo","Silver Mountain Water","Allure Homme Sport"]},
@@ -443,7 +445,7 @@ function emptyList(m){return `<div class="disc" style="text-align:center;padding
 
 /* ================= render ================= */
 const app=document.getElementById('app');
-function esc(s){return(s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function esc(s){return(s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 let render=function(){let h;const s=V.screen;
   if(s==='addsearch'){app.innerHTML=viewAddSearch();bind();focusSearch();return;}
   if(s==='intro')h=viewIntro();else if(s==='pick')h=viewPick();else if(s==='bucket')h=viewBucket();
@@ -454,11 +456,11 @@ let render=function(){let h;const s=V.screen;
 function postCard(p){return `<div class="frow"><div class="fhead"><div class="avatar">You</div><div class="finfo"><div class="ftitle"><b>You</b></div><div class="fsub">${esc(relTime(p.createdAt))}</div></div></div>
   <div class="fnotes" style="margin-top:10px;font-size:15px">${esc(p.body)}</div>
   ${p.frag!=null?`<button class="row" style="border:1.5px solid var(--line-dk);border-radius:12px;padding:9px 11px;margin-top:11px" data-detail="${p.frag}">${plate(p.frag,36,48,7)}<div class="meta"><div class="nm">${esc(F[p.frag][0])}</div><div class="hs">${esc(F[p.frag][1])}</div></div></button>`:''}
-  <div class="factions" style="margin-top:12px"><button>${icon('heartn',22)}</button><button>${icon('comment',21)}</button><button>${icon('share',20)}</button></div></div>`;}
+  <div class="factions" style="margin-top:12px"><button aria-label="Like">${icon('heartn',22)}</button><button aria-label="Comment">${icon('comment',21)}</button><button aria-label="Share">${icon('share',20)}</button></div></div>`;}
 
 function viewCompose(){const att=V.composeAttach;const words=V.composeBody.trim()?V.composeBody.trim().split(/\s+/).length:0;
   const chips=S.ranking.slice(0,8).map(r=>`<button class="chip ${att===r.id?'on':''}" data-attach="${r.id}">${esc(F[r.id][0])}</button>`).join('')||`<span class="disc" style="padding:0">Rank fragrances to attach one.</span>`;
-  return `<div class="hbar" style="padding-bottom:8px"><button style="color:var(--ink-2)" data-go="main">${icon('x',22)}</button><div class="brand" style="color:var(--ink);font-size:18px">New post</div><button class="postbtn ${V.composeBody.trim()?'on':''}" data-post="1">Post</button></div>
+  return `<div class="hbar" style="padding-bottom:8px"><button style="color:var(--ink-2)" data-go="main" aria-label="Discard post">${icon('x',22)}</button><div class="brand" style="color:var(--ink);font-size:18px">New post</div><button class="postbtn ${V.composeBody.trim()?'on':''}" data-post="1">Post</button></div>
     <div class="fill" style="padding:6px 18px">
       <textarea id="postbody" maxlength="240" placeholder="What are you wearing? Keep it short &mdash; a line or two." style="width:100%;min-height:120px;border:0;outline:none;resize:none;font-family:inherit;font-size:18px;line-height:1.4;color:var(--ink);background:none">${esc(V.composeBody)}</textarea>
       <div style="display:flex;justify-content:flex-end"><span class="eyebrow" id="pcount">${words}/50 words</span></div>
@@ -521,17 +523,17 @@ function viewReveal(){const rows=S.ranking.map((it,idx)=>rrow(it,idx,idx)).join(
 
 function rrow(it,idx,delay){const s=scoreAt(idx);const d=delay!=null?`style="animation-delay:${Math.min(delay,12)*44}ms"`:'';
   return `<button class="row" ${d} data-detail="${it.id}"><div class="rank ${idx===0?'one':''}">${idx+1}</div>${plate(it.id,40,54,8)}
-   <div class="meta"><div class="nm">${esc(F[it.id][0])}</div><div class="hs">${esc(F[it.id][1])}</div></div>${scoreCircle(s,1)}</button>`;}
+   <div class="meta"><div class="nm" title="${esc(F[it.id][0])}">${esc(F[it.id][0])}</div><div class="hs" title="${esc(F[it.id][1])}">${esc(F[it.id][1])}</div></div>${scoreCircle(s,1)}</button>`;}
 
 /* ---------- main tabs ---------- */
 function viewMain(){let b;if(V.tab==='home')b=tabHome();else if(V.tab==='explore')b=tabExplore();else if(V.tab==='activity')b=tabActivity();else b=tabProfile();return b+nav();}
-function nav(){const t=(id,ic,lb)=>`<button class="tab ${V.tab===id?'on':''}" data-navtab="${id}"><span>${icon(ic,23,V.tab===id?2.2:1.9)}</span>${lb}</button>`;
-  return `<div class="nav">${t('home','home','Home')}${t('explore','compass','Explore')}<button class="plus" data-go="addsearch"><span class="pc">${icon('plus',24,2.4)}</span>Rank</button>${t('activity','heartn','Activity')}${t('profile','usern','You')}</div>`;}
+function nav(){const t=(id,ic,lb)=>`<button class="tab ${V.tab===id?'on':''}" data-navtab="${id}" aria-label="${lb}" aria-current="${V.tab===id?'page':'false'}"><span aria-hidden="true">${icon(ic,23,V.tab===id?2.2:1.9)}</span>${lb}</button>`;
+  return `<div class="nav" role="tablist">${t('home','home','Home')}${t('explore','compass','Explore')}<button class="plus" data-go="addsearch" aria-label="Rank a fragrance"><span class="pc" aria-hidden="true">${icon('plus',24,2.4)}</span>Rank</button>${t('activity','heartn','Activity')}${t('profile','usern','You')}</div>`;}
 
 function recRow(id,reason){return `<button class="row" data-detail="${id}">${plate(id,40,54,8)}
-  <div class="meta"><div class="nm">${esc(F[id][0])}</div><div class="hs">${esc(F[id][1])}</div>${reason?`<div class="why">${reason}</div>`:''}</div>
-  <span class="addbtn" data-tried="${id}">${icon('plus',17)}</span></button>`;}
-function chevRow(id){return `<button class="row" data-detail="${id}">${plate(id,40,54,8)}<div class="meta"><div class="nm">${esc(F[id][0])}</div><div class="hs">${esc(F[id][1])}</div></div><span style="color:var(--faint)">${icon('chevR',18)}</span></button>`;}
+  <div class="meta"><div class="nm" title="${esc(F[id][0])}">${esc(F[id][0])}</div><div class="hs" title="${esc(F[id][1])}">${esc(F[id][1])}</div>${reason?`<div class="why">${reason}</div>`:''}</div>
+  <span class="addbtn" data-tried="${id}" role="button" tabindex="0" aria-label="Rank ${esc(F[id][0])}">${icon('plus',17)}</span></button>`;}
+function chevRow(id){return `<button class="row" data-detail="${id}">${plate(id,40,54,8)}<div class="meta"><div class="nm" title="${esc(F[id][0])}">${esc(F[id][0])}</div><div class="hs" title="${esc(F[id][1])}">${esc(F[id][1])}</div></div><span style="color:var(--faint)" aria-hidden="true">${icon('chevR',18)}</span></button>`;}
 
 function allGuides(){return S.guides.map((g,i)=>({ref:'u'+i,title:g.title,ids:g.ids,mine:true})).concat(GUIDES.map((g,i)=>({ref:'s'+i,title:g.t,ids:g.ids,mine:false})));}
 function getGuide(ref){if(!ref)return null;const i=+ref.slice(1);if(ref[0]==='u'){const g=S.guides[i];return g?{title:g.title,ids:g.ids,mine:true,idx:i}:null;}const g=GUIDES[i];return g?{title:g.t,ids:g.ids,mine:false}:null;}
@@ -544,7 +546,7 @@ function tabHome(){const seg=V.homeSeg;let list='';
   else{const f=friendFeed();list=f.map(x=>`<button class="row" data-detail="${x.fragId}">${plate(x.fragId,40,54,8)}<div class="meta"><div class="nm">${esc(F[x.fragId][0])}</div><div class="hs">${esc(F[x.fragId][1])}</div><div class="why"><b>${esc(x.name)}</b> &middot; ${x.match}% match</div></div><span style="color:var(--faint)">${icon('chevR',18)}</span></button>`).join('')+`<div class="disc">Sample profiles for now &mdash; follow friends to see their real picks here.</div>`;}
   const c=(id,ic,lb)=>`<button class="chip ${seg===id?'on':''}" data-homeseg="${id}">${icon(ic,15,2)}${lb}</button>`;
   const feed=feedItems().map(x=>feedCard(x)).join('');
-  return `<div class="hbar"><div class="brand">accord</div><div class="hicons"><button data-notifs="1">${icon('bell',22)}${S.notifSeen?'':`<span class="badge">${notifItems().length}</span>`}</button><button data-navtab="profile">${icon('menu',23)}</button></div></div>
+  return `<div class="hbar"><div class="brand">accord</div><div class="hicons"><button data-notifs="1" aria-label="Notifications">${icon('bell',22)}${S.notifSeen?'':`<span class="badge" aria-hidden="true">${notifItems().length}</span>`}</button><button data-navtab="profile" aria-label="Your profile">${icon('menu',23)}</button></div></div>
     <div class="fill"><button class="searchbar" data-go="addsearch">${icon('search',18)}<span>Search fragrance, house, note</span></button>
       <div class="chiprow">${c('recs','nav','For you')}${c('trending','trend','Trending')}${c('friends','usern','Friends')}</div>
       <div class="list" style="padding-bottom:6px">${list}</div>
@@ -559,7 +561,7 @@ function feedCard(x){const liked=V.liked[x.id];
     <div class="finfo"><div class="ftitle"><b>${esc(x.name)}</b> ranked <b>${esc(F[x.id][0])}</b></div><div class="fsub">${esc(F[x.id][1])}</div></div>${scoreCircle(x.score)}</div>
     <div class="fnotes"><b>Notes:</b> ${esc(F[x.id][2].slice(0,3).join(', '))}</div></button>
     <div class="flikes">${x.likes+(liked?1:0)} likes</div>
-    <div class="factions"><button class="${liked?'liked':''}" data-like="${x.id}"><span class="hrt-e">${icon('heartn',22)}</span><span class="hrt-f">${icon('heartf',22)}</span></button><button data-frag="${x.id}">${icon('comment',21)}</button><button data-frag="${x.id}">${icon('share',20)}</button><span class="chk">${icon('check',20,2.2)}</span></div>
+    <div class="factions"><button class="${liked?'liked':''}" data-like="${x.id}" aria-label="${liked?'Unlike':'Like'} ${esc(F[x.id][0])}"><span class="hrt-e">${icon('heartn',22)}</span><span class="hrt-f">${icon('heartf',22)}</span></button><button data-frag="${x.id}" aria-label="Comment on ${esc(F[x.id][0])}">${icon('comment',21)}</button><button data-frag="${x.id}" aria-label="Share ${esc(F[x.id][0])}">${icon('share',20)}</button><span class="chk" aria-hidden="true">${icon('check',20,2.2)}</span></div>
     <div class="ftime">${esc(x.time)}</div></div>`;}
 function friendFeed(){return TWINS.map(t=>{const d=twinData(t);const unt=d.ids.find(id=>!isTried(id));return{name:t.name,match:d.match,fragId:unt!=null?unt:d.ids[0],untried:unt!=null};}).sort((a,b)=>b.match-a.match);}
 
@@ -594,7 +596,7 @@ function tabActivity(){const top=`<div class="top"><div class="htitle"><h1>Activ
     <div class="shead"><div class="st">People who match your taste</div></div><div class="list">${rows}</div>
     <div class="disc">Sample profiles for now &mdash; real friends &amp; their recs appear once you follow people.</div></div>`;}
 
-function tabProfile(){const top=`<div class="hbar"><div class="brand" style="color:var(--ink);font-size:22px">You</div><div class="hicons"><button data-go="card">${icon('share',20)}</button></div></div>`;
+function tabProfile(){const top=`<div class="hbar"><div class="brand" style="color:var(--ink);font-size:22px">You</div><div class="hicons"><button data-go="card" aria-label="Share fragrance card">${icon('share',20)}</button></div></div>`;
   if(!S.ranking.length)return top+`<div class="fill"><div class="empty">${plate(nameId["Grand Soir"],80,116,12)}<div>Start ranking to reveal your Top 5 and fragrance DNA.</div><button class="btn" style="width:auto;padding:13px 22px" data-go="addsearch">Rank a fragrance</button></div></div>`;
   const dna=topAccords(5),top5=S.ranking.slice(0,5);
   const t5=top5.map((it,i)=>`<button class="t5" data-detail="${it.id}">${plate(it.id,66,92,10)}<span class="t5n"><b>${i+1}</b>&nbsp; ${esc(F[it.id][0])}</span></button>`).join('');
@@ -614,17 +616,17 @@ function tabProfile(){const top=`<div class="hbar"><div class="brand" style="col
       <div class="st"><div class="stn num">${want}</div><div class="stl">Want</div></div></div>
     <div class="segtabs" style="margin-top:16px">${st('ranking','Ranking')}${st('tried','Tried')}${st('owned','Owned')}${st('want','Want')}</div>
     ${body}
-    <div style="padding:22px 18px 30px"><button class="danger" data-reset=1>Reset everything</button></div></div>`;}
+    <div style="padding:22px 18px 4px;display:flex;flex-direction:column;gap:12px"><button class="btn line" id="exportbtn">Export my data</button><button class="danger" data-reset=1 style="text-align:center">Reset everything</button></div></div>`;}
 
 function viewGuide(){const g=getGuide(V.guideRef);if(!g)return viewGuides();const cover=g.ids.slice(0,4).map(id=>plateCell(id)).join('');const tried=g.ids.filter(id=>isTried(id)).length;
-  return `<div class="dwrap scrn"><div class="backbar" style="position:absolute;background:none;z-index:6"><button data-go="guides" style="background:rgba(0,0,0,.28);color:#fff">${icon('chevL',22)}</button><button data-go="guides" style="background:rgba(0,0,0,.28);color:#fff">${icon('x',20)}</button></div>
+  return `<div class="dwrap scrn"><div class="backbar" style="position:absolute;background:none;z-index:6"><button data-go="guides" style="background:rgba(0,0,0,.28);color:#fff" aria-label="Back to guides">${icon('chevL',22)}</button><button data-go="guides" style="background:rgba(0,0,0,.28);color:#fff" aria-label="Close">${icon('x',20)}</button></div>
     <div class="ghero">${cover}<div class="gov"><div class="eyebrow" style="color:rgba(255,255,255,.8)">${g.mine?'Your guide':'Guide'} &middot; ${g.ids.length} fragrances</div><div class="gt">${esc(g.title)}</div><div class="gprog" style="margin-top:6px">You've tried ${tried} of ${g.ids.length}</div></div></div>
     <div class="list" style="padding-top:6px">${g.ids.map(id=>{const r=rankOf(id);return `<button class="row" data-detail="${id}">${plate(id,40,54,8)}<div class="meta"><div class="nm">${esc(F[id][0])}</div><div class="hs">${esc(F[id][1])}</div></div>${r>=0?scoreCircle(scoreAt(r),1):`<span class="addbtn" data-tried="${id}">${icon('plus',17)}</span>`}</button>`;}).join('')}</div>
     ${g.mine?`<div style="padding:16px 18px 8px"><button class="danger" data-delguide="${g.idx}" style="width:100%;text-align:center;padding:12px">Delete guide</button></div>`:''}
     <div style="height:24px"></div></div>`;}
 
 function viewGuides(){const gs=allGuides();
-  return `<div class="hbar"><button style="color:var(--ink-2)" data-go="main">${icon('x',22)}</button><div class="brand" style="color:var(--ink);font-size:20px">Guides</div><button class="hbtn solid" data-go="guidenew">${icon('plus',20)}</button></div>
+  return `<div class="hbar"><button style="color:var(--ink-2)" data-go="main" aria-label="Close">${icon('x',22)}</button><div class="brand" style="color:var(--ink);font-size:20px">Guides</div><button class="hbtn solid" data-go="guidenew" aria-label="Create new guide">${icon('plus',20)}</button></div>
     <div class="fill scrn"><div style="padding:2px 18px 8px"><button class="btn" data-go="guidenew">${icon('plus',17)} Create a guide</button></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px;padding:10px 18px 24px">${gs.map(g=>guideCard(g)).join('')}</div></div>`;}
 
@@ -633,7 +635,7 @@ function viewGuideNew(){const q=V.gQuery.trim().toLowerCase();
   const list=F.map((f,i)=>i).filter(i=>!V.gIds.includes(i)).filter(i=>!q||(F[i][0]+' '+F[i][1]).toLowerCase().includes(q)).slice(0,40)
     .map(i=>`<button class="row" data-gtoggle="${i}">${plate(i,40,54,8)}<div class="meta"><div class="nm">${esc(F[i][0])}</div><div class="hs">${esc(F[i][1])}</div></div><span class="addbtn">${icon('plus',17)}</span></button>`).join('');
   const ready=V.gTitle.trim()&&V.gIds.length;
-  return `<div class="hbar" style="padding-bottom:8px"><button style="color:var(--ink-2)" data-go="guides">${icon('x',22)}</button><div class="brand" style="color:var(--ink);font-size:18px">New guide</div><button class="postbtn ${ready?'on':''}" data-createguide="1">Create</button></div>
+  return `<div class="hbar" style="padding-bottom:8px"><button style="color:var(--ink-2)" data-go="guides" aria-label="Close">${icon('x',22)}</button><div class="brand" style="color:var(--ink);font-size:18px">New guide</div><button class="postbtn ${ready?'on':''}" data-createguide="1">Create</button></div>
     <div class="fill"><div style="padding:6px 18px 0"><input id="gtitle" placeholder="Guide title &mdash; e.g. Best for Summer" value="${esc(V.gTitle)}" style="width:100%;border:0;outline:none;font-family:inherit;font-size:22px;font-weight:700;color:var(--ink);background:none;letter-spacing:-.02em"></div>
       ${V.gIds.length?`<div class="chiprow" style="padding-top:12px">${sel}</div>`:''}
       <div class="eyebrow" style="padding:16px 18px 0">Add fragrances &middot; ${V.gIds.length} added</div>
@@ -644,7 +646,7 @@ function viewRecommend(){const id=V.recFrag;const data=TWINS.map(t=>({t,d:twinDa
   const rows=data.map(({t,d})=>`<button class="row" data-recto="${esc(t.name)}"><div class="avatar">${esc(t.name[0])}</div><div class="meta"><div class="nm">${esc(t.name)}</div><div class="hs">${esc(t.vibe)}</div></div>
     <div style="flex:none;font-weight:700;color:var(--accent)" class="num">${d.match}%</div><span style="margin-left:12px;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line-dk);display:grid;place-items:center;color:#fff;flex:none;${V.recTo===t.name?'background:var(--accent);border-color:var(--accent)':''}">${V.recTo===t.name?icon('check',13,2.6):''}</span></button>`).join('');
   const ready=V.recTo;
-  return `<div class="hbar" style="padding-bottom:8px"><button style="color:var(--ink-2)" data-back-detail="1">${icon('x',22)}</button><div class="brand" style="color:var(--ink);font-size:18px">Recommend</div><button class="postbtn ${ready?'on':''}" data-sendrec="1">Send</button></div>
+  return `<div class="hbar" style="padding-bottom:8px"><button style="color:var(--ink-2)" data-back-detail="1" aria-label="Back to fragrance">${icon('x',22)}</button><div class="brand" style="color:var(--ink);font-size:18px">Recommend</div><button class="postbtn ${ready?'on':''}" data-sendrec="1">Send</button></div>
     <div class="fill"><div class="row" style="border-bottom:1px solid var(--line);margin:0 18px">${plate(id,44,60,9)}<div class="meta"><div class="nm">${esc(F[id][0])}</div><div class="hs">${esc(F[id][1])}</div></div></div>
       <div style="padding:10px 18px 0"><textarea id="recmsg" maxlength="140" placeholder="Add a note &mdash; why they'll like it (optional)" style="width:100%;min-height:60px;border:1.5px solid var(--line-dk);border-radius:12px;padding:11px 13px;outline:none;resize:none;font-family:inherit;font-size:16px;color:var(--ink);background:none"></textarea></div>
       <div class="eyebrow" style="padding:16px 18px 0">Send to a nose-twin</div>
@@ -653,11 +655,11 @@ function viewRecommend(){const id=V.recFrag;const data=TWINS.map(t=>({t,d:twinDa
 function viewNotifs(){const items=notifItems();
   const rows=items.map(n=>`<button class="row" ${n.frag!=null?`data-detail="${n.frag}"`:`data-person="${n.person}"`}><div class="avatar" style="width:42px;height:42px;font-size:16px">${esc(n.name[0])}</div>
     <div class="meta"><div class="nm" style="font-weight:500"><b>${esc(n.name)}</b> ${esc(n.text)}</div>${n.sub?`<div class="hs" style="color:var(--accent)">${esc(n.sub)}</div>`:''}</div>${n.frag!=null?plate(n.frag,40,54,8):`<span style="color:var(--faint)">${icon('chevR',18)}</span>`}</button>`).join('');
-  return `<div class="hbar" style="padding-bottom:8px"><button style="color:var(--ink-2)" data-go="main">${icon('chevL',22)}</button><div class="brand" style="color:var(--ink);font-size:18px">Notifications</div><button style="color:var(--ink-2)" data-go="main">${icon('x',22)}</button></div>
+  return `<div class="hbar" style="padding-bottom:8px"><button style="color:var(--ink-2)" data-go="main" aria-label="Back">${icon('chevL',22)}</button><div class="brand" style="color:var(--ink);font-size:18px">Notifications</div><button style="color:var(--ink-2)" data-go="main" aria-label="Close">${icon('x',22)}</button></div>
     <div class="fill scrn"><div class="list">${rows||emptyList('Nothing yet. Rank fragrances and follow people to get updates.')}</div></div>`;}
 
 function viewPerson(name){const t=TWINS.find(x=>x.name===name);if(!t)return viewMain();const d=twinData(t);const ids=t.picks.map(n=>nameId[n]).filter(x=>x!=null);const foll=isFollowing(name);
-  return `<div class="dwrap scrn"><div class="backbar"><button data-go="main" data-tab="${V.personBack}">${icon('chevL',22)}</button><button data-go="main" data-tab="${V.personBack}" style="width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2)">${icon('x',20)}</button></div>
+  return `<div class="dwrap scrn"><div class="backbar"><button data-go="main" data-tab="${V.personBack}" aria-label="Back">${icon('chevL',22)}</button><button data-go="main" data-tab="${V.personBack}" aria-label="Close" style="width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2)">${icon('x',20)}</button></div>
     <div style="text-align:center;padding:4px 24px 6px"><div class="avatar" style="width:84px;height:84px;font-size:34px;margin:0 auto 14px">${esc(t.name[0])}</div>
       <h1 style="font-size:27px;font-weight:700;letter-spacing:-.02em;margin:0">${esc(t.name)}</h1><div style="color:var(--muted);font-size:14px;margin-top:2px">${esc(t.vibe)}</div>
       <div style="display:inline-flex;margin:16px 0 4px;border:1.5px solid var(--line-dk);border-radius:14px;overflow:hidden">
@@ -682,20 +684,20 @@ function viewDetail(){const id=V.detailId,idx=rankOf(id);const ranked=idx>=0;
     <button class="stog ${isWant(id)?'on':''}" data-tog="want" data-id="${id}">Want</button></div>`;
   const actions=ranked?`<button class="btn" data-rerank="${id}">Re-rank this</button><button class="danger" data-remove="${id}" style="text-align:center;padding:8px">Remove from ranking</button>`
     :`<button class="btn" data-tried="${id}">Rank this</button>`;
-  return `<div class="dwrap scrn"><div class="backbar"><button data-go="main" data-tab="${V.detailBack}">${icon('chevL',22)}</button><button data-go="main" data-tab="${V.detailBack}">${icon('x',20)}</button></div>
+  return `<div class="dwrap scrn"><div class="backbar"><button data-go="main" data-tab="${V.detailBack}" aria-label="Back">${icon('chevL',22)}</button><button data-go="main" data-tab="${V.detailBack}" aria-label="Close">${icon('x',20)}</button></div>
     <div class="dhero">${plate(id,168,240,16)}<h1>${esc(F[id][0])}</h1><div class="dh">${esc(F[id][1])}</div></div>
     ${meta}<div class="dnotes">${notes}</div>${states}<div class="dact">${actions}<button class="btn line" data-recommend="${id}">${icon('share',16,2)} Recommend to a friend</button></div>${simHtml}<div style="height:26px"></div></div>`;}
 
 function viewCard(){const dna=topAccords(3).map(d=>d.a[0].toUpperCase()+d.a.slice(1)).join(', ');
   const items=S.ranking.slice(0,5).map((it,i)=>`<div class="pi"><div class="pr num">${i+1}</div>${plate(it.id,30,42,6)}<div><div class="pn2">${esc(F[it.id][0])}</div><div class="ph2">${esc(F[it.id][1])}</div></div></div>`).join('');
-  return `<div class="cardscreen scrn"><div class="cardtop"><button data-go="main" data-tab="profile">${icon('chevL',22)}</button><span class="hint">Screenshot to share</span><button data-go="main" data-tab="profile">${icon('x',22)}</button></div>
+  return `<div class="cardscreen scrn"><div class="cardtop"><button data-go="main" data-tab="profile" aria-label="Back to profile">${icon('chevL',22)}</button><span class="hint">Screenshot to share</span><button data-go="main" data-tab="profile" aria-label="Close">${icon('x',22)}</button></div>
     <div class="poster"><div class="pk">Accord &middot; my fragrance DNA</div><div class="pdna">${dna||'Just getting started'}</div>
       <div class="plist">${items}</div><div class="pwm" style="margin-top:auto">accord</div><div class="pf">${S.ranking.length} fragrances ranked</div></div></div>`;}
 
 function viewAddSearch(){const q=V.query.trim().toLowerCase();
   const list=F.map((f,i)=>i).filter(i=>!inRanking(i)).filter(i=>!q||(F[i][0]+' '+F[i][1]).toLowerCase().includes(q)).slice(0,50);
   const rows=list.map(i=>recRow(i)).join('')||`<div class="empty">No matches for &ldquo;${esc(V.query)}&rdquo;.</div>`;
-  return `<div class="hbar" style="padding-bottom:6px"><button style="color:var(--ink-2)" data-go="main">${icon('chevL',22)}</button><div class="brand" style="color:var(--ink);font-size:20px">Add &amp; rank</div><button style="color:var(--ink-2)" data-go="main">${icon('x',22)}</button></div>
+  return `<div class="hbar" style="padding-bottom:6px"><button style="color:var(--ink-2)" data-go="main" aria-label="Back">${icon('chevL',22)}</button><div class="brand" style="color:var(--ink);font-size:20px">Add &amp; rank</div><button style="color:var(--ink-2)" data-go="main" aria-label="Close">${icon('x',22)}</button></div>
     <div style="padding:2px 18px 10px"><div class="searchbar" style="margin:0"><span style="color:var(--muted)">${icon('search',18)}</span><input id="q" style="flex:1;border:0;background:none;outline:none;font-size:16px;color:var(--ink);font-family:inherit;font-weight:500" placeholder="Search fragrance or house" value="${esc(V.query)}" autocomplete="off"></div></div>
     <div class="fill"><div class="list">${rows}</div></div>`;}
 function focusSearch(){const q=app.querySelector('#q');if(q){const p=q.value.length;q.focus();try{q.setSelectionRange(p,p);}catch(e){}}}
@@ -742,6 +744,7 @@ function bind(){
   app.querySelectorAll('[data-attach]').forEach(b=>b.onclick=()=>{const t=app.querySelector('#postbody');if(t)V.composeBody=t.value;const id=+b.dataset.attach;V.composeAttach=V.composeAttach===id?null:id;render();});
   const pb=app.querySelector('[data-post]');if(pb)pb.onclick=()=>{const t=app.querySelector('#postbody');const body=(t?t.value:V.composeBody).trim();if(!body)return;S.posts.unshift({id:Date.now(),body,frag:V.composeAttach,createdAt:Date.now()});V.composeBody='';V.composeAttach=null;save();V.screen='main';V.tab='home';render();};
   const pt=app.querySelector('#postbody');if(pt)pt.oninput=()=>{V.composeBody=pt.value;const w=pt.value.trim()?pt.value.trim().split(/\s+/).length:0;const c=app.querySelector('#pcount');if(c)c.textContent=w+'/50 words';const x=app.querySelector('[data-post]');if(x)x.classList.toggle('on',!!pt.value.trim());};
+  const eb=app.querySelector('#exportbtn');if(eb)eb.onclick=()=>{const data=JSON.stringify(S,null,2);const blob=new Blob([data],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='accord-data.json';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);};
   const rb=app.querySelector('[data-reset]');if(rb)rb.onclick=()=>{if(confirm('Reset everything?')){S={onboarded:false,ranking:[],owned:[],tried:[],want:[],posts:[],guides:[],sentRecs:[],following:[],notifSeen:false};save();V={screen:'intro',tab:'home',pickSel:[],queue:[],cur:null,query:'',detailBack:'home',homeSeg:'recs',profSeg:'ranking',rankFam:'all',explore:null,guideRef:null,liked:{},composeBody:'',composeAttach:null,gTitle:'',gIds:[],gQuery:'',recFrag:null,recTo:null,personName:null,personBack:'activity',pickQuery:''};render();}};
   const q=app.querySelector('#q');if(q)q.oninput=()=>{V.query=q.value;const p=q.selectionStart;app.innerHTML=viewAddSearch();bind();const nq=app.querySelector('#q');if(nq){nq.focus();try{nq.setSelectionRange(p,p);}catch(e){}}};
 }
