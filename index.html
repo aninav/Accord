@@ -7,17 +7,17 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap">
 <style>
   :root{
-    --bg:#FFFFFF;--bg-2:#F4F3F0;--bg-3:#FAF9F7;
-    --ink:#1C1B19;--ink-2:#66645E;--muted:#9C9A92;--faint:#C3C0B8;
-    --line:#ECEBE6;--line-2:#E1DFD8;--line-dk:#1D1B17;
-    --accent:#567E70;--accent-press:#3F5B4F;--accent-soft:#E6F2DD;--accent-2:#88BDA4;
+    --bg:#FFFFFF;--bg-2:#F3F3F5;--bg-3:#FAFAFB;
+    --ink:#1C1B19;--ink-2:#64626A;--muted:#96959C;--faint:#C4C3C9;
+    --line:#ECECEF;--line-2:#E4E4E7;--line-dk:#1D1B17;
+    --accent:#2E8B82;--accent-press:#21665F;--accent-soft:#D8EEEA;--accent-2:#6FC2B8;
     --green:#2F8B57;--amber:#B0842B;--rust:#B0562F;
     --sp:cubic-bezier(.34,.7,.28,1);
   }
   @media(prefers-color-scheme:dark){:root{color-scheme:light}}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%}
-  body{background:#DCDAD3;color:var(--ink);font-family:"Space Grotesk",system-ui,-apple-system,Segoe UI,sans-serif;
+  body{background:#E7E7EA;color:var(--ink);font-family:"Space Grotesk",system-ui,-apple-system,Segoe UI,sans-serif;
     font-size:15px;line-height:1.42;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;display:flex;justify-content:center}
   #app{width:100%;max-width:430px;min-height:100dvh;background:var(--bg);display:flex;flex-direction:column;position:relative;overflow:hidden}
   button{font-family:inherit;font-size:inherit;cursor:pointer;border:0;background:none;color:inherit;padding:0}
@@ -43,7 +43,7 @@
 
   /* search + chips */
   .searchbar{display:flex;align-items:center;gap:10px;margin:8px 18px 0;padding:12px 15px;background:var(--bg-2);border-radius:26px;border:1.5px solid var(--line-dk);color:var(--muted);font-weight:500;font-size:14.5px}
-  .searchbar:active{background:#EDECE8}
+  .searchbar:active{background:#ECECEF}
   .chiprow{display:flex;gap:9px;overflow-x:auto;padding:14px 18px 4px;-webkit-overflow-scrolling:touch}
   .chiprow::-webkit-scrollbar{display:none}
   .chip{flex:none;display:flex;align-items:center;gap:7px;padding:9px 15px;background:var(--bg-2);border-radius:22px;border:1.5px solid var(--line-dk);font-size:13.5px;font-weight:600;color:var(--ink);white-space:nowrap}
