@@ -420,6 +420,14 @@ function twinRecs(limit){const sc={};TWINS.forEach(t=>{const d=twinData(t);const
 function topAccords(n){const k=_rankKey();if(_dnaCache&&_dnaCacheKey===k)return _dnaCache.slice(0,n||5);const w=myWeights();const arr=Object.entries(w).sort((a,b)=>b[1]-a[1]);const mx=arr.length?arr[0][1]:1;_dnaCache=arr.map(([a,v])=>({a,pct:Math.max(14,Math.round(v/mx*100))}));_dnaCacheKey=k;return _dnaCache.slice(0,n||5);}
 function similarTo(id,n){const acc=new Set(F[id][2]);const out=[];for(let i=0;i<F.length;i++){if(i===id||inRanking(i))continue;let o=0;for(const a of F[i][2])if(acc.has(a))o++;if(o)out.push({id:i,o});}return out.sort((a,b)=>b.o-a.o).slice(0,n||3);}
 function famRanking(fam){const out=[];S.ranking.forEach((it,idx)=>{if(fam==='all'||F[it.id][2].includes(fam))out.push({id:it.id,score:scoreAt(idx)});});return out;}
+function recReason(id,prim){const w=myWeights();
+  let sec=null,sv=0;for(const a of F[id][2]){if(a===prim)continue;const v=w[a]||0;if(v>sv){sv=v;sec=a;}}
+  let ref=null,rs=-1;S.ranking.forEach((it,idx)=>{if(!F[it.id][2].includes(prim))return;const sc=scoreAt(idx);if(sc>rs){rs=sc;ref=it.id;}});
+  const P=`<b>${esc(prim)}</b>`,Sx=sec?`<b>${esc(sec)}</b>`:null,rn=ref!=null?esc(F[ref][0]):null;
+  const opts=[`Leans ${P}, like your top picks`,`Right up your ${P} alley`,`Your taste skews ${P}`];
+  if(Sx){opts.push(`${P} with a ${Sx} edge`,`${P} + ${Sx} — your kind of blend`);}
+  if(rn){opts.push(`Shares a ${P} heart with ${rn}`,`Because you rate ${rn} highly`);}
+  return opts[id%opts.length];}
 const TWINS=[
  {name:"Marcus",vibe:"Sweet gourmand beast-mode",picks:["Khamrah","Naxos","Uomo Intense","Grand Soir","Bad Boy","9pm","Layton","Fan Your Flames"]},
  {name:"Elena",vibe:"Soft florals & clean musks",picks:["Delina","Libre","Good Girl","Coco Mademoiselle","Mon Guerlain","Idole","Baccarat Rouge 540"]},
@@ -541,7 +549,7 @@ function guideCard(g){const cover=g.ids.slice(0,4).map(id=>plateCell(id)).join('
   return `<button class="gcard" data-guide="${g.ref}"><div class="gcover">${cover}</div><div class="gover">${g.mine?'<div class="eyebrow" style="color:rgba(255,255,255,.82)">Yours</div>':''}<div class="gtitle">${esc(g.title)}</div><div class="gprog">${g.mine?g.ids.length+' fragrances':`You've tried ${tried} of ${g.ids.length}`}</div></div></button>`;}
 
 function tabHome(){const seg=V.homeSeg;let list='';
-  if(seg==='recs'){const r=recs(10);list=r.length?r.map(x=>recRow(x.id,`Leans <b>${esc(x.why)}</b>, like your top picks`)).join(''):emptyList("Rank a few fragrances and your recommendations show up here.");}
+  if(seg==='recs'){const r=recs(10);list=r.length?r.map(x=>recRow(x.id,recReason(x.id,x.why))).join(''):emptyList("Rank a few fragrances and your recommendations show up here.");}
   else if(seg==='trending'){list=TRENDING.map((id,i)=>`<button class="row" data-detail="${id}"><div class="rank">${i+1}</div>${plate(id,40,54,8)}<div class="meta"><div class="nm">${esc(F[id][0])}</div><div class="hs">${esc(F[id][1])}</div></div><span class="why" style="color:var(--rust)">${icon('trend',15,2)}</span></button>`).join('');}
   else{const f=friendFeed();list=f.map(x=>`<button class="row" data-detail="${x.fragId}">${plate(x.fragId,40,54,8)}<div class="meta"><div class="nm">${esc(F[x.fragId][0])}</div><div class="hs">${esc(F[x.fragId][1])}</div><div class="why"><b>${esc(x.name)}</b> &middot; ${x.match}% match</div></div><span style="color:var(--faint)">${icon('chevR',18)}</span></button>`).join('')+`<div class="disc">Sample profiles for now &mdash; follow friends to see their real picks here.</div>`;}
   const c=(id,ic,lb)=>`<button class="chip ${seg===id?'on':''}" data-homeseg="${id}">${icon(ic,15,2)}${lb}</button>`;
@@ -573,7 +581,7 @@ function tabExplore(){const top=`<div class="top"><div class="htitle"><h1>Explor
   let head,list;
   if(V.explore&&V.explore.t==='like'){const tid=V.explore.v;head=`Like ${esc(F[tid][0])}`;list=(similarTo(tid,12).map(x=>recRow(x.id)).join(''))||emptyList('Nothing close enough yet.');}
   else if(V.explore&&V.explore.t==='cat'){const a=V.explore.v,w=myWeights();const items=F.map((f,i)=>i).filter(i=>!inRanking(i)&&F[i][2].includes(a));items.sort((x,y)=>F[y][2].reduce((s,ac)=>s+(w[ac]||0),0)-F[x][2].reduce((s,ac)=>s+(w[ac]||0),0));head=(cats.find(c=>c[0]===a)||[,a])[1];list=items.slice(0,16).map(i=>recRow(i)).join('');}
-  else{const r=recs(12);head='Recommended for you';list=r.length?r.map(x=>recRow(x.id,`Leans <b>${esc(x.why)}</b>`)).join(''):emptyList('Rank a few fragrances to unlock personalized exploration.');}
+  else{const r=recs(12);head='Recommended for you';list=r.length?r.map(x=>recRow(x.id,recReason(x.id,x.why))).join(''):emptyList('Rank a few fragrances to unlock personalized exploration.');}
   return top+`<div class="fill scrn">
     ${likeIds.length?`<div class="shead" style="padding-bottom:10px"><div class="st">Explore like</div></div><div class="chiprow" style="padding-top:0">${likeChips}</div>`:''}
     <div class="shead" style="padding-bottom:10px"><div class="st">Browse</div></div><div class="chiprow" style="padding-top:0">${catChips}</div>
