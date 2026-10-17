@@ -80,6 +80,16 @@
   .factions .liked .hrt-e{display:none}
   .factions button:not(.liked) .hrt-f{display:none}
   .factions .chk{margin-left:auto;color:var(--green)}
+  .cmtbtn{display:inline-flex;align-items:center;gap:5px}
+  .cmtbtn .cnum{font-size:13px;font-weight:600;color:var(--ink-2)}
+  .cmt{display:flex;gap:11px;padding:13px 0;border-bottom:1px solid var(--line)}
+  .cmt:last-child{border-bottom:0}
+  .cmt .avatar.sm{width:36px;height:36px;font-size:14px}
+  .cmt .cbody{font-size:14px;line-height:1.42;padding-top:2px}.cmt .cbody b{font-weight:700}
+  .cmt .cbody .ftime{margin-top:4px}
+  .cbar{display:flex;align-items:center;gap:10px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--bg)}
+  .cbar input{flex:1;border:1.5px solid var(--line-dk);border-radius:22px;padding:11px 15px;font-size:16px;font-family:inherit;outline:none;background:var(--bg-2);color:var(--ink)}
+  .cbar .postbtn[data-cmtpost]{flex:none}
   .ftime{font-size:12px;color:var(--muted);margin-top:11px}
   .composebar{display:flex;align-items:center;gap:12px;width:calc(100% - 36px);margin:0 18px 4px;padding:10px 14px 10px 10px;border:1.5px solid var(--line-dk);border-radius:26px;color:var(--muted);font-weight:500;font-size:14.5px}
   .composebar>span{flex:1;text-align:left}
@@ -375,15 +385,15 @@ function scoreCircle(s,sm){const t=s>=6.8?'hi':s>=3.4?'mid':'lo';return `<span c
 
 /* ================= state ================= */
 const KEY='accord_v3';let S=load();
-function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.ranking){r.owned=r.owned||[];r.tried=r.tried||[];r.want=r.want||[];r.posts=r.posts||[];r.guides=r.guides||[];r.sentRecs=r.sentRecs||[];r.following=r.following||[];r.notifSeen=r.notifSeen||false;return r;}}catch(e){}return{onboarded:false,ranking:[],owned:[],tried:[],want:[],posts:[],guides:[],sentRecs:[],following:[],notifSeen:false};}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({onboarded:S.onboarded,ranking:S.ranking,owned:S.owned,tried:S.tried,want:S.want,posts:S.posts,guides:S.guides,sentRecs:S.sentRecs,following:S.following,notifSeen:S.notifSeen}));}catch(e){if(e.name==='QuotaExceededError'||e.code===22)alert('Storage full \u2014 your last change was not saved. Export your data from your profile to back it up.');}}
+function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.ranking){r.owned=r.owned||[];r.tried=r.tried||[];r.want=r.want||[];r.posts=r.posts||[];r.guides=r.guides||[];r.sentRecs=r.sentRecs||[];r.following=r.following||[];r.notifSeen=r.notifSeen||false;r.comments=r.comments||{};return r;}}catch(e){}return{onboarded:false,ranking:[],owned:[],tried:[],want:[],posts:[],guides:[],sentRecs:[],following:[],notifSeen:false,comments:{}};}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({onboarded:S.onboarded,ranking:S.ranking,owned:S.owned,tried:S.tried,want:S.want,posts:S.posts,guides:S.guides,sentRecs:S.sentRecs,following:S.following,notifSeen:S.notifSeen,comments:S.comments}));}catch(e){if(e.name==='QuotaExceededError'||e.code===22)alert('Storage full \u2014 your last change was not saved. Export your data from your profile to back it up.');}}
 function isFollowing(n){return S.following.includes(n);}
 function notifItems(){const out=[];const data=TWINS.map(t=>({t,d:twinData(t)})).sort((a,b)=>b.d.match-a.d.match);
   data.slice(0,2).forEach(({t,d})=>{if(d.theirTop!=null)out.push({name:t.name,frag:d.theirTop,text:`recommends ${F[d.theirTop][0]}`,sub:`${d.match}% taste match`,person:t.name});});
   if(data[0])out.push({name:data[0].t.name,text:`You're a ${data[0].d.match}% taste match`,sub:'See their shelf',person:data[0].t.name});
   data.slice(0,3).forEach(({t})=>{const id=nameId[t.picks[0]];if(id!=null&&!isFollowing(t.name))out.push({name:t.name,text:`ranked ${F[id][0]} #1`,sub:isFollowing(t.name)?'':'Tap to follow',person:t.name,frag:id});});
   return out;}
-let V={screen:S.onboarded?'main':'intro',tab:'home',pickSel:[],queue:[],cur:null,curBucket:null,lo:0,hi:0,src:'add',onbTotal:0,cmpN:0,placed:null,query:'',detailId:null,detailBack:'home',homeSeg:'recs',profSeg:'ranking',rankFam:'all',explore:null,guideRef:null,liked:{},composeBody:'',composeAttach:null,gTitle:'',gIds:[],gQuery:'',recFrag:null,recTo:null,personName:null,personBack:'activity',pickQuery:''};
+let V={screen:S.onboarded?'main':'intro',tab:'home',pickSel:[],queue:[],cur:null,curBucket:null,lo:0,hi:0,src:'add',onbTotal:0,cmpN:0,placed:null,query:'',detailId:null,detailBack:'home',homeSeg:'recs',profSeg:'ranking',rankFam:'all',explore:null,guideRef:null,liked:{},composeBody:'',composeAttach:null,gTitle:'',gIds:[],gQuery:'',recFrag:null,recTo:null,personName:null,personBack:'activity',pickQuery:'',cmtKey:null,cmtDraft:''};
 function relTime(ts){const d=Date.now()-ts;const m=Math.floor(d/60000);if(m<1)return'Just now';if(m<60)return m+'m ago';const h=Math.floor(m/60);if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';}
 
 /* ================= ranking ================= */
@@ -458,13 +468,33 @@ let render=function(){let h;const s=V.screen;
   if(s==='addsearch'){app.innerHTML=viewAddSearch();bind();focusSearch();return;}
   if(s==='intro')h=viewIntro();else if(s==='pick')h=viewPick();else if(s==='bucket')h=viewBucket();
   else if(s==='compare')h=viewCompare();else if(s==='result')h=viewResult();else if(s==='reveal')h=viewReveal();
-  else if(s==='card')h=viewCard();else if(s==='detail')h=viewDetail();else if(s==='guide')h=viewGuide();else if(s==='guides')h=viewGuides();else if(s==='guidenew')h=viewGuideNew();else if(s==='recommend')h=viewRecommend();else if(s==='compose')h=viewCompose();else if(s==='notifs')h=viewNotifs();else if(s==='person')h=viewPerson(V.personName);else h=viewMain();
-  app.innerHTML=h;bind();if(s==='compose'){const t=app.querySelector('#postbody');if(t){t.focus();t.setSelectionRange(t.value.length,t.value.length);}}};
+  else if(s==='card')h=viewCard();else if(s==='detail')h=viewDetail();else if(s==='guide')h=viewGuide();else if(s==='guides')h=viewGuides();else if(s==='guidenew')h=viewGuideNew();else if(s==='recommend')h=viewRecommend();else if(s==='compose')h=viewCompose();else if(s==='comment')h=viewComment();else if(s==='notifs')h=viewNotifs();else if(s==='person')h=viewPerson(V.personName);else h=viewMain();
+  app.innerHTML=h;bind();if(s==='compose'){const t=app.querySelector('#postbody');if(t){t.focus();t.setSelectionRange(t.value.length,t.value.length);}}if(s==='comment'){const t=app.querySelector('#cmtin');if(t){t.focus();try{t.setSelectionRange(t.value.length,t.value.length);}catch(e){}}}};
 
-function postCard(p){return `<div class="frow"><div class="fhead"><div class="avatar">You</div><div class="finfo"><div class="ftitle"><b>You</b></div><div class="fsub">${esc(relTime(p.createdAt))}</div></div></div>
+/* ---- comments ---- */
+const CMT_POOL=[{w:"Marcus",b:"Been eyeing this one — how's the longevity?"},{w:"Elena",b:"Adding this to my sample list 🙌"},{w:"Dev",b:"More of a summer or a winter scent?"},{w:"Sofia",b:"Blind bought it, zero regrets."},{w:"Theo",b:"Solid pick. Compliment magnet."}];
+function seededComments(key){let h=0;for(let i=0;i<key.length;i++)h=(h*31+key.charCodeAt(i))>>>0;const n=h%3,out=[];for(let i=0;i<n;i++){const c=CMT_POOL[(h+i*7)%CMT_POOL.length];out.push({who:c.w,body:c.b});}return out;}
+function commentsFor(key){return seededComments(key).concat(((S.comments&&S.comments[key])||[]).map(c=>({who:'You',body:c.body,at:c.at})));}
+function commentCount(key){return commentsFor(key).length;}
+function cbtn(key){const c=commentCount(key);return `<button class="cmtbtn" data-cmt="${esc(key)}" aria-label="Comment">${icon('comment',21)}${c?`<span class="cnum">${c}</span>`:''}</button>`;}
+function addComment(key,body){if(!S.comments)S.comments={};(S.comments[key]=S.comments[key]||[]).push({body:body,at:Date.now()});save();}
+
+function viewComment(){const key=V.cmtKey||'';const isPost=key.indexOf('post:')===0;let head;
+  if(isPost){const ts=+key.slice(5),p=S.posts.find(x=>x.createdAt===ts);
+    head=`<div class="frow" style="border-top:0"><div class="fhead"><div class="avatar">You</div><div class="finfo"><div class="ftitle"><b>You</b></div><div class="fsub">${p?esc(relTime(p.createdAt)):''}</div></div></div><div class="fnotes" style="margin-top:10px">${p?esc(p.body):''}</div></div>`;
+  }else{const ix=key.indexOf(':'),name=key.slice(0,ix),id=+key.slice(ix+1);
+    head=`<div class="frow" style="border-top:0"><div class="fhead"><div class="avatar">${esc(name[0]||'?')}</div><div class="finfo"><div class="ftitle"><b>${esc(name)}</b> ranked <b>${esc(F[id][0])}</b></div><div class="fsub">${esc(F[id][1])}</div></div></div></div>`;}
+  const cs=commentsFor(key);
+  const list=cs.length?cs.map(c=>`<div class="cmt"><div class="avatar sm">${esc(c.who[0])}</div><div class="cbody"><b>${esc(c.who)}</b> ${esc(c.body)}${c.at?`<div class="ftime">${esc(relTime(c.at))}</div>`:''}</div></div>`).join(''):`<div class="disc" style="text-align:center;padding:36px 20px">No comments yet. Start the conversation.</div>`;
+  const draft=(V.cmtDraft||'').trim();
+  return `<div class="hbar" style="padding-bottom:8px"><button style="color:var(--ink-2)" data-go="main" aria-label="Back">${icon('chevL',22)}</button><div class="brand" style="color:var(--ink);font-size:18px">Comments</div><span style="width:22px"></span></div>
+    <div class="fill">${head}<div style="padding:4px 18px">${list}</div></div>
+    <div class="cbar"><input id="cmtin" maxlength="200" placeholder="Add a comment…" value="${esc(V.cmtDraft||'')}" autocomplete="off"><button class="postbtn ${draft?'on':''}" data-cmtpost="1">Post</button></div>`;}
+
+function postCard(p){const key='post:'+p.createdAt;return `<div class="frow"><div class="fhead"><div class="avatar">You</div><div class="finfo"><div class="ftitle"><b>You</b></div><div class="fsub">${esc(relTime(p.createdAt))}</div></div></div>
   <div class="fnotes" style="margin-top:10px;font-size:15px">${esc(p.body)}</div>
   ${p.frag!=null?`<button class="row" style="border:1.5px solid var(--line-dk);border-radius:12px;padding:9px 11px;margin-top:11px" data-detail="${p.frag}">${plate(p.frag,36,48,7)}<div class="meta"><div class="nm">${esc(F[p.frag][0])}</div><div class="hs">${esc(F[p.frag][1])}</div></div></button>`:''}
-  <div class="factions" style="margin-top:12px"><button aria-label="Like">${icon('heartn',22)}</button><button aria-label="Comment">${icon('comment',21)}</button><button aria-label="Share">${icon('share',20)}</button></div></div>`;}
+  <div class="factions" style="margin-top:12px"><button class="${V.liked[key]?'liked':''}" data-like="${key}" aria-label="Like"><span class="hrt-e">${icon('heartn',22)}</span><span class="hrt-f">${icon('heartf',22)}</span></button>${cbtn(key)}<button data-go="main" aria-label="Share">${icon('share',20)}</button></div></div>`;}
 
 function viewCompose(){const att=V.composeAttach;const words=V.composeBody.trim()?V.composeBody.trim().split(/\s+/).length:0;
   const chips=S.ranking.slice(0,8).map(r=>`<button class="chip ${att===r.id?'on':''}" data-attach="${r.id}">${esc(F[r.id][0])}</button>`).join('')||`<span class="disc" style="padding:0">Rank fragrances to attach one.</span>`;
@@ -509,7 +539,8 @@ function viewBucket(){const i=V.cur,first=S.ranking.length===0;
     </div></div></div>`;}
 
 function viewCompare(){const a=V.cur,m=cstep(),b=S.ranking[m].id;const cnt=V.cmpN+1;
-  return `<div class="cwrap slide">${progress()}<div class="chead"><div class="eyebrow" style="color:var(--accent-ink)">Comparison ${cnt}</div><h2>Which do you prefer?</h2></div>
+  const closeBtn=V.src!=='onboard'?`<div style="display:flex;justify-content:flex-end;padding:8px 12px 0"><button data-go="main" style="width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2)" aria-label="Cancel ranking">${icon('x',22)}</button></div>`:'';
+  return `<div class="cwrap slide">${progress()}${closeBtn}<div class="chead"><div class="eyebrow" style="color:var(--accent-ink)">Comparison ${cnt}</div><h2>Which do you prefer?</h2></div>
     <div class="cbody"><div class="duel" id="duel">
       <button class="choice" data-cmp="new"><span class="chouse">${esc(F[a][1])}</span><span class="cfrag">${esc(F[a][0])}</span></button>
       <button class="choice" data-cmp="old"><span class="chouse">${esc(F[b][1])}</span><span class="cfrag">${esc(F[b][0])}</span></button>
@@ -569,7 +600,7 @@ function feedCard(x){const liked=V.liked[x.id];
     <div class="finfo"><div class="ftitle"><b>${esc(x.name)}</b> ranked <b>${esc(F[x.id][0])}</b></div><div class="fsub">${esc(F[x.id][1])}</div></div>${scoreCircle(x.score)}</div>
     <div class="fnotes"><b>Notes:</b> ${esc(F[x.id][2].slice(0,3).join(', '))}</div></button>
     <div class="flikes">${x.likes+(liked?1:0)} likes</div>
-    <div class="factions"><button class="${liked?'liked':''}" data-like="${x.id}" aria-label="${liked?'Unlike':'Like'} ${esc(F[x.id][0])}"><span class="hrt-e">${icon('heartn',22)}</span><span class="hrt-f">${icon('heartf',22)}</span></button><button data-frag="${x.id}" aria-label="Comment on ${esc(F[x.id][0])}">${icon('comment',21)}</button><button data-frag="${x.id}" aria-label="Share ${esc(F[x.id][0])}">${icon('share',20)}</button><span class="chk" aria-hidden="true">${icon('check',20,2.2)}</span></div>
+    <div class="factions"><button class="${liked?'liked':''}" data-like="${x.id}" aria-label="${liked?'Unlike':'Like'} ${esc(F[x.id][0])}"><span class="hrt-e">${icon('heartn',22)}</span><span class="hrt-f">${icon('heartf',22)}</span></button>${cbtn(x.name+':'+x.id)}<button data-frag="${x.id}" aria-label="Share ${esc(F[x.id][0])}">${icon('share',20)}</button><span class="chk" aria-hidden="true">${icon('check',20,2.2)}</span></div>
     <div class="ftime">${esc(x.time)}</div></div>`;}
 function friendFeed(){return TWINS.map(t=>{const d=twinData(t);const unt=d.ids.find(id=>!isTried(id));return{name:t.name,match:d.match,fragId:unt!=null?unt:d.ids[0],untried:unt!=null};}).sort((a,b)=>b.match-a.match);}
 
@@ -724,8 +755,11 @@ function bind(){
   const pq=app.querySelector('#pickq');if(pq)pq.oninput=()=>{V.pickQuery=pq.value;const p=pq.selectionStart;app.innerHTML=viewPick();bind();const n=app.querySelector('#pickq');if(n){n.focus();try{n.setSelectionRange(p,p);}catch(e){}}};
   const so=app.querySelector('[data-startonb]');if(so)so.onclick=()=>startInsert(V.pickSel,'onboard');
   app.querySelectorAll('[data-bucket]').forEach(b=>b.onclick=()=>chooseBucket(b.dataset.bucket));
-  app.querySelectorAll('[data-cmp]').forEach(b=>b.onclick=()=>{const v=b.dataset.cmp;if(v==='close'){tooClose();return;}
-    const duel=app.querySelector('#duel');if(duel){duel.classList.add('picked');b.classList.add('win');app.querySelectorAll('.choice').forEach(c=>{if(c!==b)c.classList.add('dim');});}
+  app.querySelectorAll('[data-cmp]').forEach(b=>b.onclick=()=>{const duel=app.querySelector('#duel');
+    if(duel&&duel.classList.contains('picked'))return;   // ignore repeat/rapid taps during the pick animation
+    if(duel)duel.classList.add('picked');
+    const v=b.dataset.cmp;if(v==='close'){tooClose();return;}
+    if(duel){b.classList.add('win');app.querySelectorAll('.choice').forEach(c=>{if(c!==b)c.classList.add('dim');});}
     setTimeout(()=>chooseCompare(v==='new'),190);});
   app.querySelectorAll('[data-navtab]').forEach(b=>b.onclick=()=>{V.tab=b.dataset.navtab;V.screen='main';render();});
   app.querySelectorAll('[data-detail]').forEach(b=>b.onclick=e=>{if(e.target.closest('[data-tried],[data-like]'))return;openDetail(+b.dataset.detail);});
@@ -743,8 +777,11 @@ function bind(){
   app.querySelectorAll('[data-notifs]').forEach(b=>b.onclick=()=>{V.screen='notifs';S.notifSeen=true;save();render();});
   app.querySelectorAll('[data-person]').forEach(b=>b.onclick=()=>{if(V.screen==='main')V.personBack=V.tab;V.personName=b.dataset.person;V.screen='person';render();});
   app.querySelectorAll('[data-follow]').forEach(b=>b.onclick=e=>{e.stopPropagation();const n=b.dataset.follow,k=S.following.indexOf(n);if(k>=0)S.following.splice(k,1);else S.following.push(n);save();render();});
-  app.querySelectorAll('[data-like]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=+b.dataset.like;V.liked[id]=!V.liked[id];const on=V.liked[id];b.classList.toggle('liked',on);const frow=b.closest('.frow');if(frow){const fl=frow.querySelector('.flikes');if(fl){const cur=+fl.textContent.replace(/\D/g,'');fl.textContent=(cur+(on?1:-1))+' likes';}}});
+  app.querySelectorAll('[data-like]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.like;V.liked[id]=!V.liked[id];const on=V.liked[id];b.classList.toggle('liked',on);const frow=b.closest('.frow');if(frow){const fl=frow.querySelector('.flikes');if(fl){const cur=+fl.textContent.replace(/\D/g,'');fl.textContent=(cur+(on?1:-1))+' likes';}}});
   app.querySelectorAll('[data-frag]').forEach(b=>b.onclick=e=>{e.stopPropagation();openDetail(+b.dataset.frag);});
+  app.querySelectorAll('[data-cmt]').forEach(b=>b.onclick=e=>{e.stopPropagation();V.cmtKey=b.dataset.cmt;V.cmtDraft='';V.screen='comment';render();});
+  const ci=app.querySelector('#cmtin');if(ci)ci.oninput=()=>{V.cmtDraft=ci.value;const pb=app.querySelector('[data-cmtpost]');if(pb)pb.classList.toggle('on',!!ci.value.trim());};
+  const cp=app.querySelector('[data-cmtpost]');if(cp)cp.onclick=()=>{const v=(V.cmtDraft||'').trim();if(!v)return;addComment(V.cmtKey,v);V.cmtDraft='';render();};
   app.querySelectorAll('[data-rerank]').forEach(b=>b.onclick=()=>rerank(+b.dataset.rerank));
   app.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{if(confirm('Remove this from your ranking?'))removeF(+b.dataset.remove);});
   app.querySelectorAll('[data-homeseg]').forEach(b=>b.onclick=()=>{V.homeSeg=b.dataset.homeseg;render();});
@@ -756,7 +793,7 @@ function bind(){
   const pb=app.querySelector('[data-post]');if(pb)pb.onclick=()=>{const t=app.querySelector('#postbody');const body=(t?t.value:V.composeBody).trim();if(!body)return;S.posts.unshift({id:Date.now(),body,frag:V.composeAttach,createdAt:Date.now()});V.composeBody='';V.composeAttach=null;save();V.screen='main';V.tab='home';render();};
   const pt=app.querySelector('#postbody');if(pt)pt.oninput=()=>{V.composeBody=pt.value;const w=pt.value.trim()?pt.value.trim().split(/\s+/).length:0;const c=app.querySelector('#pcount');if(c)c.textContent=w+'/50 words';const x=app.querySelector('[data-post]');if(x)x.classList.toggle('on',!!pt.value.trim());};
   const eb=app.querySelector('#exportbtn');if(eb)eb.onclick=()=>{const data=JSON.stringify(S,null,2);const blob=new Blob([data],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='accord-data.json';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);};
-  const rb=app.querySelector('[data-reset]');if(rb)rb.onclick=()=>{if(confirm('Reset everything?')){S={onboarded:false,ranking:[],owned:[],tried:[],want:[],posts:[],guides:[],sentRecs:[],following:[],notifSeen:false};save();V={screen:'intro',tab:'home',pickSel:[],queue:[],cur:null,query:'',detailBack:'home',homeSeg:'recs',profSeg:'ranking',rankFam:'all',explore:null,guideRef:null,liked:{},composeBody:'',composeAttach:null,gTitle:'',gIds:[],gQuery:'',recFrag:null,recTo:null,personName:null,personBack:'activity',pickQuery:''};render();}};
+  const rb=app.querySelector('[data-reset]');if(rb)rb.onclick=()=>{if(confirm('Reset everything?')){S={onboarded:false,ranking:[],owned:[],tried:[],want:[],posts:[],guides:[],sentRecs:[],following:[],notifSeen:false,comments:{}};save();V={screen:'intro',tab:'home',pickSel:[],queue:[],cur:null,query:'',detailBack:'home',homeSeg:'recs',profSeg:'ranking',rankFam:'all',explore:null,guideRef:null,liked:{},composeBody:'',composeAttach:null,gTitle:'',gIds:[],gQuery:'',recFrag:null,recTo:null,personName:null,personBack:'activity',pickQuery:''};render();}};
   const q=app.querySelector('#q');if(q)q.oninput=()=>{V.query=q.value;const p=q.selectionStart;app.innerHTML=viewAddSearch();bind();const nq=app.querySelector('#q');if(nq){nq.focus();try{nq.setSelectionRange(p,p);}catch(e){}}};
 }
 render();
