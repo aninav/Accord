@@ -717,7 +717,10 @@ function bind(){
     if(g==='pick'){V.screen='pick';V.pickSel=[];V.pickQuery='';}else if(g==='main'){V.screen='main';if(b.dataset.tab)V.tab=b.dataset.tab;}
     else if(g==='addsearch'){V.screen='addsearch';V.query='';}else if(g==='card')V.screen='card';else if(g==='compose')V.screen='compose';
     else if(g==='guides')V.screen='guides';else if(g==='guidenew'){V.gTitle='';V.gIds=[];V.gQuery='';V.screen='guidenew';}render();});
-  app.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{const i=+b.dataset.pick,k=V.pickSel.indexOf(i);if(k>=0)V.pickSel.splice(k,1);else V.pickSel.push(i);render();});
+  app.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{const i=+b.dataset.pick,k=V.pickSel.indexOf(i);const sel=k<0;if(k>=0)V.pickSel.splice(k,1);else V.pickSel.push(i);
+    const tk=b.querySelector('.ptick');if(tk){tk.classList.toggle('on',sel);tk.innerHTML=sel?icon('check',14,2.6):'';}
+    const n=V.pickSel.length,ready=n>=4;const kick=app.querySelector('.kick');if(kick)kick.innerHTML='Step 1 &middot; '+n+' selected';
+    const fb=app.querySelector('.foot .btn');if(fb){if(ready){fb.removeAttribute('disabled');fb.setAttribute('data-startonb','1');fb.innerHTML='Start ranking &middot; '+n;fb.onclick=()=>startInsert(V.pickSel,'onboard');}else{fb.setAttribute('disabled','');fb.removeAttribute('data-startonb');fb.innerHTML="Pick "+(4-n)+" you've tried";fb.onclick=null;}}});
   const pq=app.querySelector('#pickq');if(pq)pq.oninput=()=>{V.pickQuery=pq.value;const p=pq.selectionStart;app.innerHTML=viewPick();bind();const n=app.querySelector('#pickq');if(n){n.focus();try{n.setSelectionRange(p,p);}catch(e){}}};
   const so=app.querySelector('[data-startonb]');if(so)so.onclick=()=>startInsert(V.pickSel,'onboard');
   app.querySelectorAll('[data-bucket]').forEach(b=>b.onclick=()=>chooseBucket(b.dataset.bucket));
